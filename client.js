@@ -20,6 +20,13 @@
             }
           ]
         }
+      , rtcOptions = {
+          'optional': [
+            {'DtlsSrtpKeyAgreement': true},
+            {'RtpDataChannels': true}
+          ]
+        }
+      , rctDataChannelOptions = {}
       , getUserMediaConstraints = {
           'audio': {
             'mandatory': {
@@ -30,11 +37,6 @@
             }
           },
           'video': true
-        }
-      , dataChannelOptions = {
-          'ordered': true,
-          'maxRetransmitTime': 3000,
-          'maxRetransmits': 5
         }
       , myTmpPeerConnection
       , myTmpDataChannel
@@ -55,6 +57,7 @@
             event.data) {
 
             window.console.info(event.data);
+            var domEventToDispatch = new window.CustomEvent('stream:data-arrived', { 'detail': event.data });
           } else {
 
             throw 'Data channel event not valid';
@@ -67,6 +70,20 @@
       , onDataChannelClose = function onDataChannelClose() {
 
           window.console.info('Data channel', this, 'closed.');
+        }
+      , onDataChannelArrive = function onDataChannelArrive(event) {
+
+          if (event &&
+            event.channel) {
+
+            event.channel.onerror = onDataChannelError;
+            event.channel.onmessage = onDataChannelMessage;
+            event.channel.onopen = onDataChannelOpen;
+            event.channel.onclose = onDataChannelClose;
+          } else {
+
+            throw 'Event or event chanel not present';
+          }
         }
       , errorOnGetUserMedia = function errorOnGetUserMedia(error) {
 
@@ -269,7 +286,7 @@
         }
       , initRTCPeerConnection = function initRTCPeerConnection(whoami, channel, who) {
 
-          var aPeerConnection = new window.RTCPeerConnection(rtcConfiguration)
+          var aPeerConnection = new window.RTCPeerConnection(rtcConfiguration, rtcOptions)
             , aDataCannel;
 
           aPeerConnection.onicecandidate = manageOnIceCandidate.bind(aPeerConnection, channel, who, whoami);
@@ -277,14 +294,15 @@
           aPeerConnection.onremovestream = manageOnRemoveStream.bind(aPeerConnection, channel);
           aPeerConnection.onnegotiationneeded = manageOnNegotiationNeeded.bind(aPeerConnection, channel, who, whoami);
           aPeerConnection.oniceconnectionstatechange = manageOnIceConnectionStateChange.bind(aPeerConnection, channel);
+          aPeerConnection.ondatachannel = onDataChannelArrive;
 
           aDataCannel = aPeerConnection
-            .createDataChannel('singnaler-datachannel');
+            .createDataChannel('singnaler-datachannel', rctDataChannelOptions);
 
-          aDataCannel.onerror = onDataChannelError.bind(aDataCannel);
-          aDataCannel.onmessage = onDataChannelMessage.bind(aDataCannel);
-          aDataCannel.onopen = onDataChannelOpen.bind(aDataCannel);
-          aDataCannel.onclose = onDataChannelClose.bind(aDataCannel);
+          aDataCannel.onerror = onDataChannelError;
+          aDataCannel.onmessage = onDataChannelMessage;
+          aDataCannel.onopen = onDataChannelOpen;
+          aDataCannel.onclose = onDataChannelClose;
 
           if (!peerConnections[channel]) {
 
@@ -416,7 +434,7 @@
                   if (myTmpPeerConnection) {
 
                     peerConnections[parsedMsg.channel][parsedMsg.whoami] = myTmpPeerConnection;
-                    dataChannels[parsedMsg.channel][parsedMsg] = myTmpDataChannel;
+                    dataChannels[parsedMsg.channel][parsedMsg.whoami] = myTmpDataChannel;
                     myTmpPeerConnection = undefined;
                     myTmpDataChannel = undefined;
                   }
