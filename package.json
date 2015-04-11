@@ -1,0 +1,22 @@
+{
+  "name": "signaler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "client.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wouldgo/signaler.git"
+  },
+  "author": "Dario Andrei <wouldgo84@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wouldgo/signaler/issues"
+  },
+  "homepage": "https://github.com/wouldgo/signaler"
+}
