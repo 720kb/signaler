@@ -31,13 +31,42 @@
           },
           'video': true
         }
+      , dataChannelOptions = {
+          'ordered': true,
+          'maxRetransmitTime': 3000,
+          'maxRetransmits': 5
+        }
       , myTmpPeerConnection
       , channelInitiator = {}
       , peerConnections = {}
+      , dataChannels = {}
       , myStream
       , webSocket
       , audioContext
       /* Utilities */
+      , onDataChannelError = function onDataChannelError(error) {
+
+          throw error;
+        }
+      , onDataChannelMessage = function onDataChannelMessage(event) {
+
+          if (event &&
+            event.data) {
+
+            window.console.info(event.data);
+          } else {
+
+            throw 'Data channel event not valid';
+          }
+        }
+      , onDataChannelOpen = function onDataChannelOpen() {
+
+          window.console.info('Data channel', this, 'opened...');
+        }
+      , onDataChannelClose = function onDataChannelClose() {
+
+          window.console.info('Data channel', this, 'closed.');
+        }
       , errorOnGetUserMedia = function errorOnGetUserMedia(error) {
 
           throw error;
@@ -414,6 +443,19 @@
                       manageOnAddIceCandidateSuccess,
                       manageOnAddIceCandidateError);
                   }
+
+                  if (!dataChannels[channel]) {
+
+                    dataChannels[channel] = {};
+                  }
+
+                  dataChannels[channel][parsedMsg.whoami] = peerConnections[channel][parsedMsg.whoami]
+                    .createDataChannel('singnaler-datachannel', dataChannelOptions);
+
+                  dataChannels[channel][parsedMsg.whoami].onerror = onDataChannelError.bind(dataChannels[channel][parsedMsg.whoami]);
+                  dataChannels[channel][parsedMsg.whoami].onmessage = onDataChannelMessage.bind(dataChannels[channel][parsedMsg.whoami]);
+                  dataChannels[channel][parsedMsg.whoami].onopen = onDataChannelOpen.bind(dataChannels[channel][parsedMsg.whoami]);
+                  dataChannels[channel][parsedMsg.whoami].onclose = onDataChannelClose.bind(dataChannels[channel][parsedMsg.whoami]);
                 }
               break;
 
@@ -598,7 +640,8 @@
       'streamOnChannel': streamOnChannel,
       'approve': approve,
       'unApprove': unApprove,
-      'leaveChannel': leaveChannel
+      'leaveChannel': leaveChannel,
+      'dataChannels': dataChannels
     };
   };
 
