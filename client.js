@@ -57,7 +57,7 @@
             event.data) {
 
             window.console.info(event.data);
-            var domEventToDispatch = new window.CustomEvent('stream:data-arrived', { 'detail': event.data });
+            var domEventToDispatch = new window.CustomEvent('stream:data-arrived', {'detail': event.data});
             window.dispatchEvent(domEventToDispatch);
           } else {
 
@@ -135,24 +135,23 @@
         }
       , manageCreateAnswer = function manageCreateAnswer(channel, whoami, who, offer) {
 
+          var onAnswer = function onAnswer(answer) {
+
+                this.setLocalDescription(new window.RTCSessionDescription(answer),
+                  function onSetLocalDescription() {
+
+                    webSocket.send('answer', channel, who, whoami, answer);
+                    webSocket.send('useIceCandidates', channel, who, whoami);
+                  },
+                  errorOnSetLocalDescription);
+              }
+            , onSetRemoteDescription = function onSetRemoteDescription() {
+
+                this.createAnswer(onAnswer.bind(this), errorOnCreateAnswer, sdpConstraints);
+              };
           peerConnections[channel][who].setRemoteDescription(
             new window.RTCSessionDescription(offer),
-            function onSetRemoteDescription() {
-
-              peerConnections[channel][who].createAnswer(
-                function onAnswer(answer) {
-
-                  peerConnections[channel][who].setLocalDescription(new window.RTCSessionDescription(answer),
-                    function onSetLocalDescription() {
-
-                      webSocket.send('answer', channel, who, whoami, answer);
-                      webSocket.send('useIceCandidates', channel, who, whoami);
-                    },
-                    errorOnSetLocalDescription);
-                },
-                errorOnCreateAnswer,
-                sdpConstraints);
-            },
+            onSetRemoteDescription.bind(peerConnections[channel][who]),
             errorOnSetRemoteDescription);
         }
       , manageSetRemoteDescription = function manageSetRemoteDescription(answer, whoami, who, channel) {
@@ -634,7 +633,7 @@
               if (peerConnections[channel][aPeerInChannelName]) {
 
                 peerConnections[channel][aPeerInChannelName].close();
-                dataChannels[channel][aPeerNameInChannel].close();
+                dataChannels[channel][aPeerInChannelName].close();
               }
             }
 

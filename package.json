@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint -c config/eslint.json .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
@@ -25,5 +26,8 @@
     "redis": "^0.12.1",
     "rsvp": "^3.0.18",
     "ws": "^0.7.1"
+  },
+  "devDependencies": {
+    "eslint": "^0.18.0"
   }
 }
