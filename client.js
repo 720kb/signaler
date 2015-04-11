@@ -58,6 +58,7 @@
 
             window.console.info(event.data);
             var domEventToDispatch = new window.CustomEvent('stream:data-arrived', { 'detail': event.data });
+            window.dispatchEvent(domEventToDispatch);
           } else {
 
             throw 'Data channel event not valid';
@@ -218,26 +219,13 @@
         }
       , manageCreateOffer = function manageCreateOffer(channel, whoami, who, offer) {
 
-          if (who &&
-            peerConnections[channel][who]) {
+          this.setLocalDescription(
+            new window.RTCSessionDescription(offer),
+            function onSessionDescription() {
 
-            peerConnections[channel][who].setLocalDescription(
-              new window.RTCSessionDescription(offer),
-              function onSessionDescription() {
-
-                webSocket.send('open', channel, who, whoami, offer);
-              },
-              errorOnSetLocalDescription);
-          } else {
-
-            myTmpPeerConnection.setLocalDescription(
-              new window.RTCSessionDescription(offer),
-              function onSessionDescription() {
-
-                webSocket.send('open', channel, who, whoami, offer);
-              },
-              errorOnSetLocalDescription);
-          }
+              webSocket.send('open', channel, who, whoami, offer);
+            },
+            errorOnSetLocalDescription);
         }
       , manageOnNegotiationNeeded = function manageOnNegotiationNeeded(channel, who, whoami) {
 
