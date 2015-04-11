@@ -37,6 +37,7 @@
           'maxRetransmits': 5
         }
       , myTmpPeerConnection
+      , myTmpDataChannel
       , channelInitiator = {}
       , peerConnections = {}
       , dataChannels = {}
@@ -268,7 +269,8 @@
         }
       , initRTCPeerConnection = function initRTCPeerConnection(whoami, channel, who) {
 
-          var aPeerConnection = new window.RTCPeerConnection(rtcConfiguration);
+          var aPeerConnection = new window.RTCPeerConnection(rtcConfiguration)
+            , aDataCannel;
 
           aPeerConnection.onicecandidate = manageOnIceCandidate.bind(aPeerConnection, channel, who, whoami);
           aPeerConnection.onaddstream = manageOnAddStream.bind(aPeerConnection, channel);
@@ -276,17 +278,32 @@
           aPeerConnection.onnegotiationneeded = manageOnNegotiationNeeded.bind(aPeerConnection, channel, who, whoami);
           aPeerConnection.oniceconnectionstatechange = manageOnIceConnectionStateChange.bind(aPeerConnection, channel);
 
+          aDataCannel = aPeerConnection
+            .createDataChannel('singnaler-datachannel');
+
+          aDataCannel.onerror = onDataChannelError.bind(aDataCannel);
+          aDataCannel.onmessage = onDataChannelMessage.bind(aDataCannel);
+          aDataCannel.onopen = onDataChannelOpen.bind(aDataCannel);
+          aDataCannel.onclose = onDataChannelClose.bind(aDataCannel);
+
           if (!peerConnections[channel]) {
 
             peerConnections[channel] = {};
           }
 
+          if (!dataChannels[channel]) {
+
+            dataChannels[channel] = {};
+          }
+
           if (who) {
 
             peerConnections[channel][who] = aPeerConnection;
+            dataChannels[channel][who] = aDataCannel;
           } else {
 
             myTmpPeerConnection = aPeerConnection;
+            myTmpDataChannel = aDataCannel;
           }
         }
       /* Constructor method */
@@ -399,7 +416,9 @@
                   if (myTmpPeerConnection) {
 
                     peerConnections[parsedMsg.channel][parsedMsg.whoami] = myTmpPeerConnection;
+                    dataChannels[parsedMsg.channel][parsedMsg] = myTmpDataChannel;
                     myTmpPeerConnection = undefined;
+                    myTmpDataChannel = undefined;
                   }
 
                   peerConnections[parsedMsg.channel][parsedMsg.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.channel, parsedMsg.whoami, whoami);
@@ -418,7 +437,9 @@
                   if (myTmpPeerConnection) {
 
                     peerConnections[parsedMsg.channel][parsedMsg.whoami] = myTmpPeerConnection;
+                    dataChannels[parsedMsg.channel][parsedMsg.whoami] = myTmpDataChannel;
                     myTmpPeerConnection = undefined;
+                    myTmpDataChannel = undefined;
                   }
 
                   peerConnections[parsedMsg.channel][parsedMsg.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.channel, parsedMsg.whoami, whoami);
@@ -443,19 +464,6 @@
                       manageOnAddIceCandidateSuccess,
                       manageOnAddIceCandidateError);
                   }
-
-                  if (!dataChannels[channel]) {
-
-                    dataChannels[channel] = {};
-                  }
-
-                  dataChannels[channel][parsedMsg.whoami] = peerConnections[channel][parsedMsg.whoami]
-                    .createDataChannel('singnaler-datachannel', dataChannelOptions);
-
-                  dataChannels[channel][parsedMsg.whoami].onerror = onDataChannelError.bind(dataChannels[channel][parsedMsg.whoami]);
-                  dataChannels[channel][parsedMsg.whoami].onmessage = onDataChannelMessage.bind(dataChannels[channel][parsedMsg.whoami]);
-                  dataChannels[channel][parsedMsg.whoami].onopen = onDataChannelOpen.bind(dataChannels[channel][parsedMsg.whoami]);
-                  dataChannels[channel][parsedMsg.whoami].onclose = onDataChannelClose.bind(dataChannels[channel][parsedMsg.whoami]);
                 }
               break;
 
@@ -470,6 +478,7 @@
                 if (!peerConnections[channel][parsedMsg.whoami]) {
 
                   myTmpPeerConnection = undefined;
+                  myTmpDataChannel = undefined;
                   initRTCPeerConnection(whoami, channel, parsedMsg.whoami);
                 }
                 webSocket.send('join', channel, parsedMsg.whoami, whoami);
@@ -603,6 +612,11 @@
               myTmpPeerConnection.close();
             }
 
+            if (myTmpDataChannel) {
+
+              myTmpDataChannel.close();
+            }
+
             var peersInChannel = peerConnections[channel]
               , peersInChannelNames = Object.keys(peersInChannel)
               , peersInChannelNamesLength = peersInChannelNames.length
@@ -614,10 +628,12 @@
               if (peerConnections[channel][aPeerInChannelName]) {
 
                 peerConnections[channel][aPeerInChannelName].close();
+                dataChannels[channel][aPeerNameInChannel].close();
               }
             }
 
             myTmpPeerConnection = undefined;
+            myTmpDataChannel = undefined;
             if (myStream) {
 
               myStream.stop();
