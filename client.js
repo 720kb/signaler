@@ -3,7 +3,6 @@
 (function plainOldJs(window) {
   'use strict';
 
-  window.AudioContext = window.AudioContext || window.webkitAudioContext;
   var singnaler = function singnaler(url) {
 
     /* Vars and constants */
@@ -45,7 +44,6 @@
       , dataChannels = {}
       , myStream
       , webSocket
-      , audioContext
       /* Utilities */
       , onDataChannelError = function onDataChannelError(error) {
 
@@ -149,9 +147,9 @@
 
                 this.createAnswer(onAnswer.bind(this), errorOnCreateAnswer, sdpConstraints);
               };
-          peerConnections[channel][who].setRemoteDescription(
+          this.setRemoteDescription(
             new window.RTCSessionDescription(offer),
-            onSetRemoteDescription.bind(peerConnections[channel][who]),
+            onSetRemoteDescription.bind(this),
             errorOnSetRemoteDescription);
         }
       , manageSetRemoteDescription = function manageSetRemoteDescription(answer, whoami, who, channel) {
@@ -228,17 +226,9 @@
         }
       , manageOnNegotiationNeeded = function manageOnNegotiationNeeded(channel, who, whoami) {
 
-          if (who &&
-            peerConnections[channel][who]) {
+          if (myStream) {
 
-            peerConnections[channel][who].createOffer(
-              manageCreateOffer.bind(
-                peerConnections[channel][who], channel, whoami, who), errorOnCreateOffer);
-          } else {
-
-            myTmpPeerConnection.createOffer(
-              manageCreateOffer.bind(
-                myTmpPeerConnection, channel, whoami, who), errorOnCreateOffer);
+            this.createOffer(manageCreateOffer.bind(this, channel, whoami, who), errorOnCreateOffer);
           }
         }
       , manageOnIceConnectionStateChange = function manageOnIceConnectionStateChange(channel, event) {
@@ -330,7 +320,7 @@
                   'channel': channel,
                   'payload': data
                 };
-                window.console.debug('-- OUT -->', toSend);
+                window.console.trace('-- OUT -->', toSend);
                 webSocket.push(JSON.stringify(toSend));
               } else {
 
@@ -343,15 +333,6 @@
 
               window.console.info('WebSocket', this, 'opened.');
             };
-
-            try {
-
-              audioContext = new window.AudioContext();
-              window.console.info(audioContext);
-            } catch (ex) {
-
-              throw 'Web Audio API not supported';
-            }
           } else {
 
             throw 'Please provide a valid URL.';
@@ -363,6 +344,8 @@
           if (!myStream) {
 
             myStream = localStream;
+            var domEventToDispatch = new window.CustomEvent('stream:my-stream', {'detail': localStream});
+            window.dispatchEvent(domEventToDispatch);
           }
 
           //TODO try to put the contextified audio
@@ -372,14 +355,12 @@
           if (who &&
             peerConnections[channel][who]) {
 
-            peerConnections[channel][who].onnegotiationneeded = manageOnNegotiationNeeded.bind(peerConnections[channel][who], channel, who, whoami);
+            //peerConnections[channel][who].onnegotiationneeded = manageOnNegotiationNeeded.bind(peerConnections[channel][who], channel, who, whoami);
             peerConnections[channel][who].addStream(myStream);
           } else {
 
             myTmpPeerConnection.addStream(myStream);
           }
-          var domEventToDispatch = new window.CustomEvent('stream:my-stream', {'detail': localStream});
-          window.dispatchEvent(domEventToDispatch);
         }
       , manageOnWebSocketMessage = function manageOnWebSocketMessage(whoami, channel, event) {
 
@@ -395,7 +376,7 @@
             , theChannelInitiatior
             , i;
 
-          window.console.debug('-- IN -->', parsedMsg);
+          window.console.trace('-- IN -->', parsedMsg);
           /*{
             'opcode': opcode,
             'whoami': whoami,
@@ -427,7 +408,7 @@
                   }
 
                   peerConnections[parsedMsg.channel][parsedMsg.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.channel, parsedMsg.whoami, whoami);
-                  manageCreateAnswer(parsedMsg.channel, whoami, parsedMsg.whoami, parsedMsg.payload);
+                  manageCreateAnswer.call(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.channel, whoami, parsedMsg.whoami, parsedMsg.payload);
                 } else {
 
                   throw 'No payload';
@@ -486,12 +467,12 @@
                   myTmpDataChannel = undefined;
                   initRTCPeerConnection(whoami, channel, parsedMsg.whoami);
                 }
-                webSocket.send('join', channel, parsedMsg.whoami, whoami);
+                this.send('join', channel, parsedMsg.whoami, whoami);
               break;
 
               case 'redoJoin':
 
-                webSocket.send('join', channel, parsedMsg.whoami, whoami);
+                this.send('join', channel, parsedMsg.whoami, whoami);
               break;
 
               case 'approved':
@@ -548,7 +529,7 @@
             whoami) {
 
             channelInitiator[channel] = whoami;
-            webSocket.onmessage = manageOnWebSocketMessage.bind(null, whoami, channel);
+            webSocket.onmessage = manageOnWebSocketMessage.bind(webSocket, whoami, channel);
             initRTCPeerConnection(whoami, channel, undefined);
             window.getUserMedia(getUserMediaConstraints,
               manageLocalStream.bind(null, channel, whoami, undefined),
@@ -563,14 +544,14 @@
           if (channel &&
             whoami) {
 
-            webSocket.onmessage = manageOnWebSocketMessage.bind(null, whoami, channel);
+            webSocket.onmessage = manageOnWebSocketMessage.bind(webSocket, whoami, channel);
             initRTCPeerConnection(whoami, channel, undefined);
             webSocket.send('join', channel, undefined, whoami);
           } else {
 
             throw 'Please provide channel name and user identification';
           }
-        }
+        }/* todo later...
       , streamOnChannel = function streamOnChannel(channel, whoami) {
           if (channel &&
             whoami) {
@@ -651,18 +632,65 @@
 
             throw 'Please provide channel name and user identification';
           }
+        }*/
+      , getDataChannels = function getDataChannels() {
+
+          var dataChannelsChannels = Object.keys(dataChannels)
+            , dataChannelsChannelsIndex = 0
+            , dataChannelsChannelsLength = dataChannelsChannels.length
+            , aDataChannelsChannel
+            , aDataChannelKey
+            , aDataChannelsChannelUsers
+            , aDataChannelsChannelUsersIndex
+            , aDataChannelsChannelUsersLength
+            , aDataChannelUser
+            , aDataChannel
+            , toReturn = {};
+          for (; dataChannelsChannelsIndex < dataChannelsChannelsLength; dataChannelsChannelsIndex += 1) {
+
+            aDataChannelKey = dataChannelsChannels[dataChannelsChannelsIndex];
+            if (aDataChannelKey) {
+
+              if (!toReturn[aDataChannelKey]) {
+
+                toReturn[aDataChannelKey] = {};
+              }
+              aDataChannelsChannel = dataChannels[aDataChannelKey];
+              if (aDataChannelsChannel) {
+
+                aDataChannelsChannelUsers = Object.keys(aDataChannelsChannel);
+                aDataChannelsChannelUsersIndex = 0;
+                aDataChannelsChannelUsersLength = aDataChannelsChannelUsers.length;
+                for (; aDataChannelsChannelUsersIndex < aDataChannelsChannelUsersLength; aDataChannelsChannelUsersIndex += 1) {
+
+                  aDataChannelUser = aDataChannelsChannelUsers[aDataChannelsChannelUsersIndex];
+                  if (aDataChannelUser) {
+
+                    aDataChannel = aDataChannelsChannel[aDataChannelUser];
+                    if (aDataChannel &&
+                      aDataChannel.readyState === 'open') {
+
+                      toReturn[aDataChannelKey][aDataChannelUser] = aDataChannel;
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          return toReturn;
         };
 
     /* Start */
     initSignaler(url);
     return {
       'createChannel': createChannel,
-      'joinChannel': joinChannel,
+      'joinChannel': joinChannel/*,
       'streamOnChannel': streamOnChannel,
       'approve': approve,
       'unApprove': unApprove,
-      'leaveChannel': leaveChannel,
-      'dataChannels': dataChannels
+      'leaveChannel': leaveChannel*/,
+      'dataChannels': getDataChannels
     };
   };
 

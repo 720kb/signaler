@@ -460,6 +460,9 @@
             sockets[channel][who]) {
 
             sockets[channel][who].send('p2pIsInst', channel, who, whoami);
+          } else {
+
+            console.error('Params not valid');
           }
         }
       , sendUsersToConnectWithToApproved = function sendUsersToConnectWithToApproved(channel, who, whoami) {
@@ -510,7 +513,13 @@
           }*/
 
           /*eslint-disable no-console*/
-          console.log(parsedMsg);
+          console.log('-- incoming --', {
+            'opcode': parsedMsg.opcode,
+            'whoami': parsedMsg.whoami,
+            'token': 'jwt-token',
+            'who': parsedMsg.who,
+            'channel': parsedMsg.channel
+          });
           /*eslint-enable no-console*/
 
           if (/* Mandatory fields */
@@ -649,6 +658,9 @@
                 'channel': channel
               });
               socket.push(JSON.stringify(toSend));
+            } else {
+
+              console.log('Socket is in readyState', socket.readyState);
             }
           };
 
