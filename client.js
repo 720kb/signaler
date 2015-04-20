@@ -154,7 +154,7 @@
         }
       , manageSetRemoteDescription = function manageSetRemoteDescription(answer, whoami, who, channel) {
 
-          peerConnections[channel][who].setRemoteDescription(
+          this.setRemoteDescription(
             new window.RTCSessionDescription(answer),
             notifySettingRemoteDescription.bind(null, whoami, who, channel),
             errorOnSetRemoteDescription);
@@ -355,7 +355,7 @@
           if (who &&
             peerConnections[channel][who]) {
 
-            //peerConnections[channel][who].onnegotiationneeded = manageOnNegotiationNeeded.bind(peerConnections[channel][who], channel, who, whoami);
+            peerConnections[channel][who].onnegotiationneeded = manageOnNegotiationNeeded.bind(peerConnections[channel][who], channel, who, whoami);
             peerConnections[channel][who].addStream(myStream);
           } else {
 
@@ -429,7 +429,7 @@
                   }
 
                   peerConnections[parsedMsg.channel][parsedMsg.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.channel, parsedMsg.whoami, whoami);
-                  manageSetRemoteDescription(parsedMsg.payload, whoami, parsedMsg.whoami, channel);
+                  manageSetRemoteDescription.call(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.payload, whoami, parsedMsg.whoami, channel);
                 } else {
 
                   throw 'No payload or user identification';
