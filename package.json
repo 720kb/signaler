@@ -22,12 +22,10 @@
   },
   "homepage": "https://github.com/wouldgo/signaler",
   "dependencies": {
-    "hiredis": "^0.3.0",
-    "redis": "^0.12.1",
-    "rsvp": "^3.0.18",
-    "ws": "^0.7.1"
+    "comunicator": "^2.0.0"
   },
   "devDependencies": {
     "eslint": "^0.18.0"
   }
 }
+
