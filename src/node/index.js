@@ -2,6 +2,177 @@
 (function withModule(require, module, console) {
   'use strict';
 
+  module.exports = function signalerExport(saltKey) {
+
+    var comunicator = require('comunicator')(saltKey)
+      , initiators = {}
+      , listeners = {}
+      , waiters = {}
+      , getInitiatorForChannel = function getInitiatorForChannel(channel) {
+
+          if (!channel) {
+
+            throw 'channel name [channel] provided is invalid';
+          }
+
+          return initiators[channel];
+        }
+      , setInitiatorForChannel = function setInitiatorForChannel(channel, who) {
+
+          if (!channel ||
+              !who) {
+
+            throw 'channel name [channel] or user [who] provided are invalid';
+          }
+
+          var initiatorForChannel = getInitiatorForChannel(channel);
+          if (!initiatorForChannel) {
+
+            initiators[channel] = who;
+          } else {
+
+            console.warn('initiator is already present. The returned value is,', initiatorForChannel);
+          }
+        }
+      , removeInitiatorForChannel = function removeInitiatorForChannel(channel) {
+
+          if (!channel) {
+
+            throw 'channel name [channel] provided is invalid';
+          }
+
+          if (channel[channel]) {
+
+            delete initiators[channel];
+          } else {
+
+            console.warn('no initiator for channel', channel);
+          }
+        }
+      , addListenerForChannel = function addListenerForChannel(channel, who) {
+
+          if (!channel ||
+              !who) {
+
+            throw 'channel name [channel] or user [who] provided are invalid';
+          }
+
+          var initiatorForChannel = getInitiatorForChannel(channel);
+          if ((initiatorForChannel && initiatorForChannel !== who) ||
+            !initiatorForChannel) {
+
+            if (!listeners[channel]) {
+
+              listeners[channel] = [];
+            }
+
+            if (listeners[channel].indexOf(who) < 0) {
+
+              listeners[channel].push(who);
+            } else {
+
+              console.warn('user [who]', who, 'already in listeners');
+            }
+          } else {
+
+            console.warn('un-managed scenario...');
+          }
+        }
+      , removeListenerForChannel = function removeListenerForChannel(channel, who) {
+
+          if (!channel ||
+            !who) {
+
+            throw 'channel name [channel] or user [who] provided are invalid';
+          }
+
+          if (listeners[channel]) {
+
+            var indexOfUser = listeners[channel].indexOf(who);
+            if (indexOfUser >= 0) {
+
+              listeners[channel].splice(indexOfUser, 1);
+            } else {
+
+              console.warn('user [who]', who, 'not in listeners');
+            }
+          } else {
+
+            throw 'no listeners for channel [channel] ' + channel;
+          }
+        }
+      , getListenersForChannel = function getListenersForChannel(channel) {
+
+          if (!channel) {
+
+            throw 'channel name [channel] provided is invalid';
+          }
+
+          if (!listeners[channel]) {
+
+            return [];
+          }
+
+          return listeners[channel];
+        }
+      , addInitiatorWaiterForChannel = function addInitiatorWaiterForChannel(channel, who) {
+
+          if (!channel ||
+            !who) {
+
+            throw 'channel name [channel] provided is invalid';
+          }
+
+          if (!waiters[channel]) {
+
+            waiters[channel] = [];
+          }
+
+          waiters[channel].push(who);
+        }
+      , removeInitiatorWaiterForChannel = function removeInitiatorWaiterForChannel(channel, who) {
+
+          if (!channel ||
+            !who) {
+
+            throw 'channel name [channel] or user [who] provided are invalid';
+          }
+
+          if (waiters[channel]) {
+
+            var indexOfUser = waiters[channel].indexOf(who);
+            if (indexOfUser >= 0) {
+
+              waiters[channel].splice(indexOfUser, 1);
+            } else {
+
+              console.warn('user [who]', who, 'not in waiters');
+            }
+          } else {
+
+            throw 'no waiters for channel [channel] ' + channel;
+          }
+        }
+      , getInitiatorWaitersForChannel = function getInitiatorWaitersForChannel(channel) {
+
+          if (!channel) {
+
+            throw 'channel name [channel] provided is invalid';
+          }
+
+          if (!waiters[channel]) {
+
+            return [];
+          } else {
+
+            return waiters[channel];
+          }
+        }
+
+  };
+
+
+  /*
   var redisDriver = require('redis')
     , redisPort = process.env.REDIS_PORT || 6379
     , redisIp = process.env.REDIS_IP || '127.0.0.1'
@@ -12,125 +183,8 @@
     , WebSocketServer = ws.Server
     , wss = new WebSocketServer({'host': '0.0.0.0', 'port': rtcPort}, function onSuccess() {
 
-        /*eslint-disable no-console*/
         console.info('Server listen websocket connections on port', rtcPort);
-        /*eslint-enable no-console*/
       })
-    , constructKeyForChannel = function constructKeyForChannel(channel, domain) {
-
-        return 'channel-' + channel + ':' + domain;
-      }
-    , listenersField = (function calcListenersField() {
-
-        return 'listeners';
-      }())
-    , initiatorField = (function calcInitiatorField() {
-
-        return 'channelOwner';
-      }())
-    , waitersForInitiatorField = (function calcWaitersForInitiatorField() {
-
-        return 'waitersForOwner';
-      }())
-    , approvedUsersField = (function calcApprovedUsersField() {
-
-        return 'approvedUsers';
-      }())
-    , constructOffersField = function constructOffersField(who) {
-
-        return who + '-offer';
-      }
-    , constructIceCadindatesFieldsForUser = function constructIceCadindatesFieldsForUser(who) {
-
-        return who + '-iceCadidates';
-      }
-    , getInitiatorForChannel = function getInitiatorForChannel(channel) {
-        var channelInitiatorKey = constructKeyForChannel(channel, initiatorField);
-        return new RSVP.Promise(function deferred(resolve, reject) {
-
-          redis.get(channelInitiatorKey, function onResult(err, channelInitiator) {
-
-            if (!err &&
-              channelInitiator) {
-
-              resolve(channelInitiator);
-            } else {
-
-              reject('Problems in retrieve initiator for channel ' + channel + ' - ' + err);
-            }
-          });
-        });
-      }
-    , setInitiatorForChannel = function setInitiatorForChannel(channel, who) {
-        var channelInitiatorKey = constructKeyForChannel(channel, initiatorField);
-        getInitiatorForChannel(channel).catch(function onError() {
-
-          redis.set(channelInitiatorKey, who);
-        });
-      }
-    , removeInitiatorForChannel = function removeInitiatorForChannel(channel) {
-        var channelInitiatorKey = constructKeyForChannel(channel, initiatorField);
-        redis.del(channelInitiatorKey);
-      }
-    , addListenerForChannel = function addListenerForChannel(channel, who) {
-        var listenersForChannel = constructKeyForChannel(channel, listenersField);
-        getInitiatorForChannel(channel).then(function onSuccess(channelInitiator) {
-
-          if (channelInitiator !== who) {
-
-            redis.sadd(listenersForChannel, who);
-          }
-        }).catch(function onFailure() {
-
-          redis.sadd(listenersForChannel, who);
-        });
-      }
-    , removeListenerForChannel = function removeListenerForChannel(channel, who) {
-        var listenersForChannel = constructKeyForChannel(channel, listenersField);
-        redis.srem(listenersForChannel, who);
-      }
-    , getListenersForChannel = function getListenersForChannel(channel) {
-        var listenersForChannel = constructKeyForChannel(channel, listenersField);
-        return new RSVP.Promise(function deferred(resolve, reject) {
-
-          redis.smembers(listenersForChannel, function onResult(err, channelMembers) {
-
-            if (!err &&
-              channelMembers) {
-
-              resolve(channelMembers);
-            } else {
-
-              reject('Problems in retrieve listeners for channel ' + channel + ' - ' + err);
-            }
-          });
-        });
-      }
-    , addInitiatorWaiterForChannel = function addInitiatorWaiterForChannel(channel, who) {
-        var initiatorWaiterForChannel = constructKeyForChannel(channel, waitersForInitiatorField);
-        redis.sadd(initiatorWaiterForChannel, who);
-      }
-    , removeInitiatorWaiterForChannel = function removeInitiatorWaiterForChannel(channel, who) {
-        var initiatorWaiterForChannel = constructKeyForChannel(channel, waitersForInitiatorField);
-        redis.srem(initiatorWaiterForChannel, who);
-      }
-    , getInitiatorWaitersForChannel = function getInitiatorWaitersForChannel(channel) {
-        var initiatorWaiterForChannel = constructKeyForChannel(channel, waitersForInitiatorField);
-        return new RSVP.Promise(function deferred(resolve, reject) {
-
-          redis.smembers(initiatorWaiterForChannel, function onResult(err, inititatorWaiters) {
-
-            if (!err &&
-              inititatorWaiters) {
-
-              resolve(inititatorWaiters);
-            } else {
-
-              reject('Problems in retrieve initiator waiters for channel ' + channel + ' - ' + err);
-            }
-          });
-        });
-      }
     , addApprovedUserForChannel = function addApprovedUserForChannel(channel, who) {
         var approvedUsersForChannel = constructKeyForChannel(channel, approvedUsersField);
         redis.sadd(approvedUsersForChannel, who);
@@ -503,16 +557,16 @@
       , manageIncomingMessage = function manageIncomingMessage(message, aWebSocket) {
 
           var parsedMsg = JSON.parse(message);
-          /*{
-              'opcode': opcode,
-              'whoami': whoami,
-              'token': 'jwt-token',
-              'who': who,
-              'channel': channel,
-              'payload': data
-          }*/
+          //{
+          //    'opcode': opcode,
+          //    'whoami': whoami,
+          //    'token': 'jwt-token',
+          //    'who': who,
+          //    'channel': channel,
+          //    'payload': data
+          //}
 
-          /*eslint-disable no-console*/
+
           console.log('-- incoming --', {
             'opcode': parsedMsg.opcode,
             'whoami': parsedMsg.whoami,
@@ -520,9 +574,9 @@
             'who': parsedMsg.who,
             'channel': parsedMsg.channel
           });
-          /*eslint-enable no-console*/
 
-          if (/* Mandatory fields */
+
+          if (// Mandatory fields
             parsedMsg.opcode &&
             parsedMsg.whoami &&
             parsedMsg.token &&
@@ -626,16 +680,14 @@
 
               default:
 
-                /*eslint-disable no-console*/
+
                 console.error(parsedMsg.opcode, 'un-manageable.');
-                /*eslint-enable no-console*/
+
             }
             //});
           } else {
 
-            /*eslint-disable no-console*/
             console.error(parsedMsg, 'is an unaccettable message.');
-            /*eslint-enable no-console*/
           }
         }
       , onRequest = function onRequest(socket) {
@@ -689,4 +741,5 @@
       'listenersForChannel': getListenersForChannel
     };
   };
+  */
 }(require, module, console));
