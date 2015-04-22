@@ -700,6 +700,37 @@
           }
         };
 
+    comunicator.on('comunicator:user-leave', leave);
+    comunicator.on('comunicator:message-arrived', function onComunicatorMessage(payload) {
+      // { 'whoami': parsedMsg.data.whoami, 'who': parsedMsg.data.who, 'what': parsedMsg.data.what }
+
+      if (payload &&
+        payload.whoami &&
+        payload.who &&
+        payload.what &&
+        payload.what.scope) {
+
+        var messageBody = payload.what;
+        switch(messageBody.scope) {
+          case 'open':
+
+            if (parsedMsg.payload) {
+
+              setInitiatorForChannel(messageBody.channel, payload.whoami);
+              addOfferForChannel(messageBody.offer, parsedMsg.whoami, messageBody.channel);
+              if (parsedMsg.who) {//TODO: mh... need to review the client rigth now...
+
+                sendP2PIsInst(parsedMsg.channel, parsedMsg.who, parsedMsg.whoami);
+              }
+            }
+          break;
+        }
+      } else {
+
+        console.error('problem during message delivery for', payload, 'object');
+      }
+    });
+
     return {
       'listenersForChannel': getListenersForChannel
     };
