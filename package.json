@@ -7,7 +7,7 @@
     "lint": "eslint -c config/eslint.json src"
   },
   "files": [
-    "index.js",
+    "src/node/index.js",
     "client.js"
   ],
   "repository": {
@@ -28,4 +28,3 @@
     "uglifyjs": "^2.4.10"
   }
 }
-
