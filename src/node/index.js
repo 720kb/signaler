@@ -374,112 +374,189 @@
           }
         }
       }
+    , isEmpty = function isEmpty(map) {
+        for (var key in map) {
+
+          if (map.hasOwnProperty(key)) {
+
+            return false;
+          }
+        }
+        return true;
+      }
     , leave = function leave(whoami) {
 
         var initiatorsKeys = Object.keys(initiators)
-          , listenersKeys = Object.keys(listeners)
-          , waitersKeys = Object.keys(waiters)
-          , approvedUsersKeys = Object.keys(approvedUsers)
-          , offersKeys = Object.keys(offers)
-          , iceCandidatesKeys = Object.keys(iceCandidates)
-          , directIceCandidatesKeys = Object.keys(directIceCandidates)
-          , initiatorsKeysIndex = 0
-          , listenersKeysIndex = 0
-          , waitersKeysIndex = 0
-          , approvedUsersKeysIndex = 0
-          , offersKeysIndex = 0
-          , iceCandidatesKeysIndex = 0
-          , directIceCandidatesKeysIndex = 0
           , initiatorsKeysLength = initiatorsKeys.length
+          , initiatorsKeysIndex = 0
+          , anInitiatorChannel
+          , channelInitiator
+          , channelInitiatorWaiters
+          , approvedUsersInChannel
+          , listenersKeys = Object.keys(listeners)
+          , listenersKeysIndex = 0
           , listenersKeysLength = listenersKeys.length
-          , waitersKeysLength = waitersKeys.length
-          , approvedUsersKeysLength = approvedUsersKeys.length
-          , offersKeysLength = offersKeys.length
-          , iceCandidatesKeysLength = iceCandidatesKeys.length
-          , directIceCandidatesKeysLength = directIceCandidatesKeys.length
-          , anInitiatorsChannel
           , aListenersChannel
+          , aListenersChannelIndex = 0
+          , waitersKeys = Object.keys(waiters)
+          , waitersKeysIndex = 0
+          , waitersKeysLength = waitersKeys.length
           , aWaitersChannel
+          , aWaitersChannelIndex = 0
+          , approvedUsersKeys = Object.keys(approvedUsers)
+          , approvedUsersKeysIndex = 0
+          , approvedUsersKeysLength = approvedUsersKeys.length
           , anApprovedUsersChannel
+          , anApprovedUsersChannelIndex = 0
+          , offersKeys = Object.keys(offers)
+          , offersKeysIndex = 0
+          , offersKeysLength = offersKeys.length
           , anOffersChannel
+          , iceCandidatesKeys = Object.keys(iceCandidates)
+          , iceCandidatesKeysIndex = 0
+          , iceCandidatesKeysLength = iceCandidatesKeys.length
           , anIceCandidatesChannel
+          , anIceCandidatesChannel
+          , anIceCandidatesChannelKeys
+          , anIceCandidatesChannelKeysIndex = 0
+          , anIceCandidatesChannelUser
+          , directIceCandidatesKeys = Object.keys(directIceCandidates)
+          , directIceCandidatesKeysIndex = 0
+          , directIceCandidatesKeysLength = directIceCandidatesKeys.length
           , aDirectIceCandidatesChannel
-          , initiatorUsersInChannel
-
-          , initiatorUsersInChannelIndex = 0
-
-          , initiatorUsersInChannelLength
-
-          , anInitiatorUserInChannel;
+          , aDirectIceCandidatesUsersForChannel
+          , aDirectIceCandidatesUsersForChannelIndex
+          , aDirectIceCandidatesUserForChannel;
         for (; initiatorsKeysIndex < initiatorsKeysLength; initiatorsKeysIndex += 1) {
 
-          anInitiatorsChannel = initiatorsKeys[initiatorsKeysIndex];
-          if (anInitiatorsChannel) {
+          anInitiatorChannel = initiatorsKeys[initiatorsKeysIndex];
+          if (anInitiatorChannel &&
+            anInitiatorChannel === whoami) {
 
-            initiatorUsersInChannel = Object.keys(anInitiatorsChannel);
-            initiatorUsersInChannelLength = initiatorUsersInChannel.length;
-            for (initiatorUsersInChannelIndex = 0; initiatorUsersInChannelIndex < initiatorUsersInChannelLength; initiatorUsersInChannelIndex += 1) {
+            delete initiators[anInitiatorChannel];
+            channelInitiator = getInitiatorForChannel(aChannel);
+            channelInitiatorWaiters = getInitiatorWaitersForChannel(aChannel);
+            approvedUsersInChannel = getApprovedUsersForChannel(aChannel);
+            if (channelInitiator) {
 
-              anInitiatorUserInChannel = initiatorUsersInChannel[initiatorUsersInChannelIndex];
-              if (anInitiatorUserInChannel) {
+              manageInitiator(aChannel, aChannelUser, channelInitiator);
+            } else {
 
+              removeListenerForChannel(this, aChannel, aChannelUser);
+            }
 
+            if (channelInitiatorWaiters) {
+
+              manageInitiatorWaiter(aChannel, aChannelUser, channelInitiatorWaiters);
+            }
+
+            if (approvedUsersInChannel) {
+
+              manageApprovedUser(aChannel, aChannelUser, approvedUsersInChannel);
+            }
+          }
+        }
+
+        for (; listenersKeysIndex < listenersKeysLength; listenersKeysIndex += 1) {
+
+          aListenersChannel = listeners[listenersKeys[listenersKeysIndex]];
+          for (aListenersChannelIndex = 0; aListenersChannelIndex < aListenersChannel.length; aListenersChannelIndex += 1) {
+
+            if (aListenersChannel[aListenersChannelIndex] &&
+              aListenersChannel[aListenersChannelIndex] === whoami) {
+
+              listeners[listenersKeys[listenersKeysIndex]].splice(aListenersChannelIndex, 1);
+              if (listeners[listenersKeys[listenersKeysIndex]].length === 0) {
+
+                delete listeners[listenersKeys[listenersKeysIndex]];
               }
             }
           }
         }
 
+        for (; waitersKeysIndex < waitersKeysLength; waitersKeysIndex += 1) {
 
-        var channels = Object.keys(sockets)
-          , aChannelIndex = 0
-          , aChannel
-          , channelUsers
-          , channelUsersNames
-          , channelUsersIndex
-          , aChannelUser
-          , channelsLength = channels.length
-          , usersInChannelLength
-          , waitersForInitiatorForChannelLength
-          , eliminateUserFromInitiatorWaitersInChannel
-          , usersWaitingForInitiatorIndex
-          , aUserWaitingForInitiatorForChannel
-          , usersApprovedInChannelLength
-          , usersApprovedInChannelIndex
-          , aUserApprovedInChannel
-          , eliminateUserFromApprovedInChannel;
+          aWaitersChannel = waiters[waitersKeys[waitersKeysIndex]];
+          for (aWaitersChannelIndex = 0; i < aWaitersChannel.length; aWaitersChannelIndex += 1) {
 
-        for (aChannelIndex = 0; aChannelIndex < channelsLength; aChannelIndex += 1) {
+            if (aWaitersChannel[aWaitersChannelIndex] &&
+              aWaitersChannel[aWaitersChannelIndex] === whoami) {
 
-          aChannel = channels[aChannelIndex];
-          channelUsers = sockets[aChannel];
-          channelUsersNames = Object.keys(channelUsers);
-          usersInChannelLength = channelUsersNames.length;
-          for (channelUsersIndex = 0; channelUsersIndex < usersInChannelLength; channelUsersIndex += 1) {
+              waiters[waitersKeys[waitersKeysIndex]].splice(aWaitersChannelIndex, 1);
+              if (waiters[waitersKeys[waitersKeysIndex]].length === 0) {
 
-            aChannelUser = channelUsersNames[channelUsersIndex];
-            if (aWebSocket === sockets[aChannel][aChannelUser]) {
+                delete waiters[waitersKeys[waitersKeysIndex]];
+              }
+            }
+          }
+        }
 
-              delete sockets[aChannel][aChannelUser];
-              if (directIceCandidates[aChannel] &&
-                directIceCandidates[aChannel][aChannelUser]) {
+        for (; approvedUsersKeysIndex < approvedUsersKeysLength; approvedUsersKeysIndex += 1) {
 
-                delete directIceCandidates[aChannel][aChannelUser];
-                if (isEmpty(directIceCandidates[aChannel])) {
+          anApprovedUsersChannel = approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]];
+          for (anApprovedUsersChannelIndex = 0; anApprovedUsersChannelIndex < anApprovedUsersChannel.length; anApprovedUsersChannelIndex += 1) {
 
-                  delete directIceCandidates[aChannel];
+            if (anApprovedUsersChannel[anApprovedUsersChannelIndex] &&
+              anApprovedUsersChannel[anApprovedUsersChannelIndex] === whoami) {
+
+              approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]].splice(anApprovedUsersChannelIndex, 1);
+              if (approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]].length === 0) {
+
+                delete approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]];
+              }
+            }
+          }
+        }
+
+        for (; offersKeysIndex < offersKeysLength; offersKeysIndex += 1) {
+
+          anOffersChannel = offers[offersKeys[offersKeysIndex]];
+          if (anOffersChannel &&
+            anOffersChannel.who === whoami) {
+
+            delete offers[offersKeys[offersKeysIndex]];
+          }
+        }
+
+        for (; iceCandidatesKeysIndex < iceCandidatesKeysLength; iceCandidatesKeysIndex += 1) {
+
+          anIceCandidatesChannel = iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]]
+          if (anIceCandidatesChannel) {
+
+            anIceCandidatesChannelKeys = Object.keys(anIceCandidatesChannel);
+            for (anIceCandidatesChannelKeysIndex = 0; anIceCandidatesChannelKeysIndex < anIceCandidatesChannelKeys.length; anIceCandidatesChannelKeysIndex += 1) {
+
+              if (anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex] &&
+                anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex] === whoami) {
+
+                delete iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]][anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex]];
+                if (isEmpty(iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]])) {
+
+                  delete iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]];
                 }
               }
+            }
+          }
+        }
 
-              if (isEmpty(sockets[aChannel])) {
+        for (; directIceCandidatesKeysIndex < directIceCandidatesKeysLength; directIceCandidatesKeysIndex += 1) {
 
-                delete sockets[aChannel];
+          aDirectIceCandidatesChannel = directIceCandidates[directIceCandidatesKeys[directIceCandidatesKeysIndex]];
+          if (aDirectIceCandidatesChannel) {
+
+            aDirectIceCandidatesUsersForChannel = Object.keys(aDirectIceCandidatesChannel);
+            for (aDirectIceCandidatesUsersForChannelIndex = 0; aDirectIceCandidatesUsersForChannelIndex < Things.length; aDirectIceCandidatesUsersForChannelIndex += 1) {
+
+              aDirectIceCandidatesUserForChannel = aDirectIceCandidatesUsersForChannel[aDirectIceCandidatesUsersForChannelIndex];
+              if (aDirectIceCandidatesUserForChannel &&
+                aDirectIceCandidatesUserForChannel === whoami) {
+
+                delete directIceCandidates[directIceCandidatesKeys[directIceCandidatesKeysIndex]][aDirectIceCandidatesUserForChannel];
+                if (isEmpty(directIceCandidates[directIceCandidatesKeys[directIceCandidatesKeysIndex]])) {
+
+                  delete directIceCandidates[directIceCandidatesKeys[directIceCandidatesKeysIndex]];
+                }
               }
-
-              getInitiatorForChannel(aChannel)
-                .then(manageInitiator.bind(this, aChannel, aChannelUser))
-                .catch(removeListenerForChannel.bind(this, aChannel, aChannelUser));
-              getInitiatorWaitersForChannel(aChannel).then(manageInitiatorWaiter.bind(this, aChannel, aChannelUser));
-              getApprovedUsersForChannel(aChannel).then(manageApprovedUser.bind(this, aChannel, aChannelUser));
             }
           }
         }
@@ -621,17 +698,7 @@
               'channel': channel
             });
           }
-        }
-      , isEmpty = function isEmpty(map) {
-          for (var key in map) {
-
-            if (map.hasOwnProperty(key)) {
-
-              return false;
-            }
-          }
-          return true;
-        }
+        };
 
     return {
       'listenersForChannel': getListenersForChannel
@@ -645,8 +712,7 @@
 
   module.exports = function exporting() {
 
-    var
-      , manageIncomingMessage = function manageIncomingMessage(message, aWebSocket) {
+    var manageIncomingMessage = function manageIncomingMessage(message, aWebSocket) {
 
           var parsedMsg = JSON.parse(message);
           //{
@@ -781,42 +847,6 @@
 
             console.error(parsedMsg, 'is an unaccettable message.');
           }
-        }
-      , onRequest = function onRequest(socket) {
-
-          socket.push = socket.send;
-          socket.send = function send(opcode, channel, who, whoami, data) {
-            if (socket.readyState === socket.OPEN) {
-
-              var toSend = {
-                'opcode': opcode,
-                'whoami': whoami,
-                'who': who,
-                'channel': channel,
-                'payload': data
-              };
-              console.log('-- send --', {
-                'opcode': opcode,
-                'whoami': whoami,
-                'who': who,
-                'channel': channel
-              });
-              socket.push(JSON.stringify(toSend));
-            } else {
-
-              console.log('Socket is in readyState', socket.readyState);
-            }
-          };
-
-          socket.on('message', function onMessage(message) {
-
-            manageIncomingMessage(message, socket);
-          });
-
-          socket.on('close', function onClose() {
-
-            websocketClosed(socket);
-          });
         };
   };
   */
