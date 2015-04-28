@@ -8,7 +8,6 @@
     , approvedUsers = {}
     , offers = {}
     , iceCandidates = {}
-    , directIceCandidates = {}
     , getInitiatorForChannel = function getInitiatorForChannel(channel) {
 
         if (!channel) {
@@ -419,14 +418,7 @@
           , anIceCandidatesChannel
           , anIceCandidatesChannelKeys
           , anIceCandidatesChannelKeysIndex = 0
-          , anIceCandidatesChannelUser
-          , directIceCandidatesKeys = Object.keys(directIceCandidates)
-          , directIceCandidatesKeysIndex = 0
-          , directIceCandidatesKeysLength = directIceCandidatesKeys.length
-          , aDirectIceCandidatesChannel
-          , aDirectIceCandidatesUsersForChannel
-          , aDirectIceCandidatesUsersForChannelIndex
-          , aDirectIceCandidatesUserForChannel;
+          , anIceCandidatesChannelUser;
         for (; initiatorsKeysIndex < initiatorsKeysLength; initiatorsKeysIndex += 1) {
 
           anInitiatorChannel = initiatorsKeys[initiatorsKeysIndex];
@@ -533,28 +525,6 @@
                 if (isEmpty(iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]])) {
 
                   delete iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]];
-                }
-              }
-            }
-          }
-        }
-
-        for (; directIceCandidatesKeysIndex < directIceCandidatesKeysLength; directIceCandidatesKeysIndex += 1) {
-
-          aDirectIceCandidatesChannel = directIceCandidates[directIceCandidatesKeys[directIceCandidatesKeysIndex]];
-          if (aDirectIceCandidatesChannel) {
-
-            aDirectIceCandidatesUsersForChannel = Object.keys(aDirectIceCandidatesChannel);
-            for (aDirectIceCandidatesUsersForChannelIndex = 0; aDirectIceCandidatesUsersForChannelIndex < Things.length; aDirectIceCandidatesUsersForChannelIndex += 1) {
-
-              aDirectIceCandidatesUserForChannel = aDirectIceCandidatesUsersForChannel[aDirectIceCandidatesUsersForChannelIndex];
-              if (aDirectIceCandidatesUserForChannel &&
-                aDirectIceCandidatesUserForChannel === whoami) {
-
-                delete directIceCandidates[directIceCandidatesKeys[directIceCandidatesKeysIndex]][aDirectIceCandidatesUserForChannel];
-                if (isEmpty(directIceCandidates[directIceCandidatesKeys[directIceCandidatesKeysIndex]])) {
-
-                  delete directIceCandidates[directIceCandidatesKeys[directIceCandidatesKeysIndex]];
                 }
               }
             }
@@ -724,6 +694,35 @@
               }
             }
           break;
+
+          case 'join':
+
+            addListenerForChannel(parsedMsg.channel, parsedMsg.whoami);
+            sendOffersTo(aWebSocket, parsedMsg.whoami, parsedMsg.channel);
+          break;
+
+          case 'answer':
+
+            sendAnswerTo(parsedMsg.channel, parsedMsg.who, parsedMsg.whoami, parsedMsg.payload);
+          break;
+
+          case 'ice-candidate':
+
+            if (parsedMsg.payload &&
+              parsedMsg.whoami &&
+              parsedMsg.channel) {
+
+              if (directIceCandidates[parsedMsg.channel] &&
+                directIceCandidates[parsedMsg.channel][parsedMsg.who] &&
+                directIceCandidates[parsedMsg.channel][parsedMsg.who][parsedMsg.whoami]) {
+
+                sockets[parsedMsg.channel][parsedMsg.who].send('candidate', parsedMsg.channel, parsedMsg.who, parsedMsg.whoami, [parsedMsg.payload]);
+              } else {
+
+                addIceCandidateForUserInChannel(parsedMsg.channel, parsedMsg.whoami, parsedMsg.payload);
+              }
+            }
+          break;
         }
       } else {
 
@@ -774,47 +773,6 @@
             addWebSocketForChannel(aWebSocket, parsedMsg.whoami, parsedMsg.channel);
             //jwt.verify(parsedMsg.token, config.sessionSecretKey, function () {
             switch (parsedMsg.opcode) {
-              case 'open':
-
-                if (parsedMsg.payload) {
-
-                  setInitiatorForChannel(parsedMsg.channel, parsedMsg.whoami);
-                  addOfferForChannel(parsedMsg.payload, parsedMsg.whoami, parsedMsg.channel);
-                  if (parsedMsg.who) {
-
-                    sendP2PIsInst(parsedMsg.channel, parsedMsg.who, parsedMsg.whoami);
-                  }
-                }
-              break;
-
-              case 'join':
-
-                addListenerForChannel(parsedMsg.channel, parsedMsg.whoami);
-                sendOffersTo(aWebSocket, parsedMsg.whoami, parsedMsg.channel);
-              break;
-
-              case 'answer':
-
-                sendAnswerTo(parsedMsg.channel, parsedMsg.who, parsedMsg.whoami, parsedMsg.payload);
-              break;
-
-              case 'iceCandidate':
-
-                if (parsedMsg.payload &&
-                  parsedMsg.whoami &&
-                  parsedMsg.channel) {
-
-                  if (directIceCandidates[parsedMsg.channel] &&
-                    directIceCandidates[parsedMsg.channel][parsedMsg.who] &&
-                    directIceCandidates[parsedMsg.channel][parsedMsg.who][parsedMsg.whoami]) {
-
-                    sockets[parsedMsg.channel][parsedMsg.who].send('candidate', parsedMsg.channel, parsedMsg.who, parsedMsg.whoami, [parsedMsg.payload]);
-                  } else {
-
-                    addIceCandidateForUserInChannel(parsedMsg.channel, parsedMsg.whoami, parsedMsg.payload);
-                  }
-                }
-              break;
 
               case 'useIceCandidates':
 
