@@ -3,165 +3,87 @@
 (function plainOldJs(window) {
   'use strict';
 
-  var Singnaler = function Singnaler(sdpConstraints, rtcConfiguration, rtcOptions, rtcDataChannelOptions, getUserMediaConstraints) {
-
-    if (!sdpConstraints) {
-
-      this.sdpConstraints = {
-        'mandatory': {
-          'OfferToReceiveAudio': true,
-          'OfferToReceiveVideo': true
-        }
-      };
-    } else {
-
-      this.sdpConstraints = sdpConstraints;
-    }
-
-    if (!rtcConfiguration) {
-
-      this.rtcConfiguration = {
-        'iceServers': [
-          {
-            'url': 'stun:stun.l.google.com:19302'
-          }
-        ]
-      };
-    } else {
-
-      this.rtcConfiguration = rtcConfiguration;
-    }
-
-    if (!rtcOptions) {
-
-      this.rtcOptions = {
-        'optional': [
-          {'DtlsSrtpKeyAgreement': true},
-          {'RtpDataChannels': true}
-        ]
-      };
-    } else {
-
-      this.rtcOptions = rtcOptions;
-    }
-
-    if (!rtcDataChannelOptions) {
-
-      this.rtcDataChannelOptions = {};
-    } else {
-
-      this.rtcDataChannelOptions = rtcDataChannelOptions;
-    }
-
-    if (!getUserMediaConstraints) {
-
-      this.getUserMediaConstraints = {
-        'audio': {
-          'mandatory': {
-            'googEchoCancellation': 'false',
-            'googAutoGainControl': 'false',
-            'googNoiseSuppression': 'false',
-            'googHighpassFilter': 'false'
-          }
-        },
-        'video': true
-      };
-    } else {
-
-      this.getUserMediaConstraints = getUserMediaConstraints;
-    }
+  var Singnaler = function Singnaler(url, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt, getUserMediaConst) {
 
     /* Vars and constants */
-    this.myTmpPeerConnection;
-    this.myTmpDataChannel;
-    this.channelInitiator = {};
-    this.peerConnections = {};
-    this.dataChannels = {};
-    this.myStream;
+    var myTmpPeerConnection
+      , myTmpDataChannel
+      , channelInitiator = {}
+      , peerConnections = {}
+      , dataChannels = {}
+      , myStream
+      , comunicator
+      , sdpConstraints = {
+          'mandatory': {
+            'OfferToReceiveAudio': true,
+            'OfferToReceiveVideo': true
+          }
+        }
+      , rtcConfiguration = {
+          'iceServers': [
+            {
+              'url': 'stun:stun.l.google.com:19302'
+            }
+          ]
+        }
+      , rtcOptions = {
+          'optional': [
+            {'DtlsSrtpKeyAgreement': true},
+            {'RtpDataChannels': true}
+          ]
+        }
+      , rtcDataChannelOptions = {}
+      , getUserMediaConstraints = {
+          'audio': {
+            'mandatory': {
+              'googEchoCancellation': 'false',
+              'googAutoGainControl': 'false',
+              'googNoiseSuppression': 'false',
+              'googHighpassFilter': 'false'
+            }
+          },
+          'video': true
+        }
+        /* Utilities */
+      , onDataChannelError = function onDataChannelError(error) {
 
-    /* Constructor method */
-    this.initSignaler = function initSignaler(websocketUrl) {
+          throw error;
+        }
+      , onDataChannelMessage = function onDataChannelMessage(event) {
 
-      if (websocketUrl) {
+          if (event &&
+            event.data) {
 
-        webSocket = new window.WebSocket(websocketUrl);
-        webSocket.push = webSocket.send;
-        webSocket.send = function send(opcode, channel, who, whoami, data) {
-
-          if (webSocket.readyState === window.WebSocket.OPEN) {
-
-            var toSend = {
-              'opcode': opcode,
-              'whoami': whoami,
-              'token': 'jwt-token',
-              'who': who,
-              'channel': channel,
-              'payload': data
-            };
-            window.console.trace('-- OUT -->', toSend);
-            webSocket.push(JSON.stringify(toSend));
+            window.console.info(event.data);
+            var domEventToDispatch = new window.CustomEvent('stream:data-arrived', {'detail': event.data});
+            window.dispatchEvent(domEventToDispatch);
           } else {
 
-            window.console.info('Sound transport is not ready. Retry...');
-            window.requestAnimationFrame(webSocket.send.bind(webSocket, opcode, channel, who, whoami, data));
+            throw 'Data channel event not valid';
           }
-        };
+        }
+      , onDataChannelOpen = function onDataChannelOpen() {
 
-        webSocket.onopen = function onopen() {
+          window.console.info('Data channel', this, 'opened...');
+        }
+      , onDataChannelClose = function onDataChannelClose() {
 
-          window.console.info('WebSocket', this, 'opened.');
-        };
-      } else {
+          window.console.info('Data channel', this, 'closed.');
+        }
+      , onDataChannelArrive = function onDataChannelArrive(event) {
 
-        throw 'Please provide a valid URL.';
-      }
-    };
+          if (event &&
+            event.channel) {
 
-    /* Utilities */
-    this.onDataChannelError = function onDataChannelError(error) {
+            event.channel.onerror = onDataChannelError;
+            event.channel.onmessage = onDataChannelMessage;
+            event.channel.onopen = onDataChannelOpen;
+            event.channel.onclose = onDataChannelClose;
+          } else {
 
-      throw error;
-    };
-
-    this.onDataChannelMessage = function onDataChannelMessage(event) {
-
-      if (event &&
-        event.data) {
-
-        window.console.info(event.data);
-        var domEventToDispatch = new window.CustomEvent('stream:data-arrived', {'detail': event.data});
-        window.dispatchEvent(domEventToDispatch);
-      } else {
-
-        throw 'Data channel event not valid';
-      }
-    };
-
-    this.onDataChannelOpen = function onDataChannelOpen() {
-
-      window.console.info('Data channel', this, 'opened...');
-    };
-
-    this.onDataChannelClose = function onDataChannelClose() {
-
-      window.console.info('Data channel', this, 'closed.');
-    };
-
-    this.onDataChannelArrive = function onDataChannelArrive(event) {
-
-      if (event &&
-        event.channel) {
-
-        event.channel.onerror = onDataChannelError;
-        event.channel.onmessage = onDataChannelMessage;
-        event.channel.onopen = onDataChannelOpen;
-        event.channel.onclose = onDataChannelClose;
-      } else {
-
-        throw 'Event or event chanel not present';
-      }
-    };
-
+            throw 'Event or event chanel not present';
+          }
+        }
       , errorOnGetUserMedia = function errorOnGetUserMedia(error) {
 
           throw error;
@@ -720,8 +642,41 @@
           return toReturn;
         };
 
-    /* Start */
-    initSignaler(url);
+    if (url) {
+
+      comunicator = new Comunicator(url);
+    } else {
+
+      throw {
+        'cause': 'Missing mandatory <url> parameter'
+      }
+    }
+
+    if (sdpConst) {
+
+      sdpConstraints = sdpConst;
+    }
+
+    if (rtcConf) {
+
+      rtcConfiguration = rtcConf;
+    }
+
+    if (rtcOpt) {
+
+      rtcOptions = rtcOpt;
+    }
+
+    if (rtcDataChannelOpt) {
+
+      rtcDataChannelOptions = rtcDataChannelOpt;
+    }
+
+    if (getUserMediaConst) {
+
+      getUserMediaConstraints = getUserMediaConst;
+    }
+
     return {
       'createChannel': createChannel,
       'joinChannel': joinChannel/*,
@@ -733,5 +688,5 @@
     };
   };
 
-  window.singnaler = singnaler;
+  window.Singnaler = Singnaler;
 }(window));
