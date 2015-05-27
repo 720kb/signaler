@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/node/index.js",
   "scripts": {
-    "lint": "eslint -c config/eslint.json src"
+    "lint": "eslint -c .eslintrc src && jscs -c .jscs src"
   },
   "files": [
     "src/node/index.js",
@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "eslint": "^0.19.0",
+    "jscs": "^1.13.1",
     "uglifyjs": "^2.4.10"
   }
 }

@@ -1,4 +1,4 @@
-/*global require module process console*/
+/*global require module console*/
 (function withModule(require, module, console) {
   'use strict';
 
@@ -31,7 +31,9 @@
           initiators[channel] = who;
         } else {
 
+          /*eslint-disable no-console*/
           console.warn('initiator is already present. The returned value is,', initiatorForChannel);
+          /*eslint-enable no-console*/
         }
       }
     , removeInitiatorForChannel = function removeInitiatorForChannel(channel) {
@@ -46,7 +48,9 @@
           delete initiators[channel];
         } else {
 
+          /*eslint-disable no-console*/
           console.warn('no initiator for channel', channel);
+          /*eslint-enable no-console*/
         }
       }
     , addListenerForChannel = function addListenerForChannel(channel, who) {
@@ -58,7 +62,7 @@
         }
 
         var initiatorForChannel = getInitiatorForChannel(channel);
-        if ((initiatorForChannel && initiatorForChannel !== who) ||
+        if (initiatorForChannel && initiatorForChannel !== who ||
           !initiatorForChannel) {
 
           if (!listeners[channel]) {
@@ -71,11 +75,15 @@
             listeners[channel].push(who);
           } else {
 
+            /*eslint-disable no-console*/
             console.warn('user [who]', who, 'already in listeners');
+            /*eslint-enable no-console*/
           }
         } else {
 
+          /*eslint-disable no-console*/
           console.warn('un-managed scenario...');
+          /*eslint-enable no-console*/
         }
       }
     , removeListenerForChannel = function removeListenerForChannel(channel, who) {
@@ -94,7 +102,9 @@
             listeners[channel].splice(indexOfUser, 1);
           } else {
 
+            /*eslint-disable no-console*/
             console.warn('user [who]', who, 'not in listeners');
+            /*eslint-enable no-console*/
           }
         } else {
 
@@ -146,7 +156,9 @@
             waiters[channel].splice(indexOfUser, 1);
           } else {
 
+            /*eslint-disable no-console*/
             console.warn('user [who]', who, 'not in waiters');
+            /*eslint-enable no-console*/
           }
         } else {
 
@@ -163,10 +175,9 @@
         if (!waiters[channel]) {
 
           return [];
-        } else {
-
-          return waiters[channel];
         }
+
+        return waiters[channel];
       }
     , addApprovedUserForChannel = function addApprovedUserForChannel(channel, who) {
 
@@ -199,7 +210,9 @@
             approvedUsers[channel].splice(indexOfUser, 1);
           } else {
 
+            /*eslint-disable no-console*/
             console.warn('user [who]', who, 'not in approved users');
+            /*eslint-enable no-console*/
           }
         } else {
 
@@ -216,10 +229,9 @@
         if (!approvedUsers[channel]) {
 
           return [];
-        } else {
-
-          return approvedUsers[channel];
         }
+
+        return approvedUsers[channel];
       }
     , setOfferForUserInChannel = function setOfferForUserInChannel(channel, who, offer) {
 
@@ -238,7 +250,9 @@
           };
         } else {
 
+          /*eslint-disable no-console*/
           console.warn('There already is an offer for channel', channel, 'identified by', offers[channel]);
+          /*eslint-enable no-console*/
         }
       }
     , getOfferForChannel = function getOfferForChannel(channel) {
@@ -253,10 +267,11 @@
           var toReturn = offers[channel];
           delete offers[channel];
           return toReturn;
-        } else {
-
-          console.warn('Offer for channel', channel, 'isn\'t present.');
         }
+
+        /*eslint-disable no-console*/
+        console.warn('Offer for channel', channel, 'isn\'t present.');
+        /*eslint-enable no-console*/
       }
     , addIceCandidateForUserInChannel = function addIceCandidateForUserInChannel(channel, who, iceCandidate) {
 
@@ -304,18 +319,19 @@
         }
 
         var initiator = getInitiatorForChannel(channel)
-          , approvedUsers = getApprovedUsersForChannel(channel);
+          , theApprovedUsers = getApprovedUsersForChannel(channel);
         if (initiator &&
-          approvedUsers) {
+          theApprovedUsers) {
 
           return {
             'initiator': initiator,
-            'approvedUsers': approvedUsers
+            'approvedUsers': theApprovedUsers
           };
-        } else {
-
-          console.warn('initiator', initiator,'or approvedUsers', approvedUsers, 'are undefined');
         }
+
+        /*eslint-disable no-console*/
+        console.warn('initiator', initiator, 'or approvedUsers', theApprovedUsers, 'are undefined');
+        /*eslint-enable no-console*/
       }
     , manageInitiator = function manageInitiator(theChannel, theChannelUser, initiator) {
 
@@ -726,7 +742,9 @@
         }
       } else {
 
+        /*eslint-disable no-console*/
         console.error('problem during message delivery for', payload, 'object');
+        /*eslint-enable no-console*/
       }
     });
 
