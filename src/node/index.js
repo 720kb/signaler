@@ -349,9 +349,11 @@
 
         if (inititatorWaiters) {
 
-          waitersForInitiatorForChannelLength = inititatorWaiters.length;
-          eliminateUserFromInitiatorWaitersInChannel = false;
-          for (usersWaitingForInitiatorIndex = 0; usersWaitingForInitiatorIndex < waitersForInitiatorForChannelLength; usersWaitingForInitiatorIndex += 1) {
+          var waitersForInitiatorForChannelLength = inititatorWaiters.length
+            , eliminateUserFromInitiatorWaitersInChannel = false
+            , usersWaitingForInitiatorIndex = 0
+            , aUserWaitingForInitiatorForChannel;
+          for (; usersWaitingForInitiatorIndex < waitersForInitiatorForChannelLength; usersWaitingForInitiatorIndex += 1) {
 
             aUserWaitingForInitiatorForChannel = inititatorWaiters[usersWaitingForInitiatorIndex];
             if (aUserWaitingForInitiatorForChannel === theChannelUser) {
@@ -367,15 +369,17 @@
           }
         }
       }
-    , manageApprovedUser = function manageApprovedUser(theChannel, theChannelUser, approvedUsers) {
+    , manageApprovedUser = function manageApprovedUser(theChannel, theChannelUser, theApprovedUsers) {
 
-        if (approvedUsers) {
+        if (theApprovedUsers) {
 
-          usersApprovedInChannelLength = approvedUsers.length;
-          eliminateUserFromApprovedInChannel = false;
-          for (usersApprovedInChannelIndex = 0; usersApprovedInChannelIndex < usersApprovedInChannelLength; usersApprovedInChannelIndex += 1) {
+          var usersApprovedInChannelLength = theApprovedUsers.length
+            , eliminateUserFromApprovedInChannel = false
+            , usersApprovedInChannelIndex = 0
+            , aUserApprovedInChannel;
+          for (; usersApprovedInChannelIndex < usersApprovedInChannelLength; usersApprovedInChannelIndex += 1) {
 
-            aUserApprovedInChannel = approvedUsers[usersApprovedInChannelIndex];
+            aUserApprovedInChannel = theApprovedUsers[usersApprovedInChannelIndex];
             if (aUserApprovedInChannel === theChannelUser) {
 
               eliminateUserFromApprovedInChannel = true;
@@ -431,10 +435,8 @@
           , iceCandidatesKeysIndex = 0
           , iceCandidatesKeysLength = iceCandidatesKeys.length
           , anIceCandidatesChannel
-          , anIceCandidatesChannel
           , anIceCandidatesChannelKeys
-          , anIceCandidatesChannelKeysIndex = 0
-          , anIceCandidatesChannelUser;
+          , anIceCandidatesChannelKeysIndex = 0;
         for (; initiatorsKeysIndex < initiatorsKeysLength; initiatorsKeysIndex += 1) {
 
           anInitiatorChannel = initiatorsKeys[initiatorsKeysIndex];
@@ -442,25 +444,25 @@
             anInitiatorChannel === whoami) {
 
             delete initiators[anInitiatorChannel];
-            channelInitiator = getInitiatorForChannel(aChannel);
-            channelInitiatorWaiters = getInitiatorWaitersForChannel(aChannel);
-            approvedUsersInChannel = getApprovedUsersForChannel(aChannel);
+            channelInitiator = getInitiatorForChannel(initiatorsKeysIndex);
+            channelInitiatorWaiters = getInitiatorWaitersForChannel(initiatorsKeysIndex);
+            approvedUsersInChannel = getApprovedUsersForChannel(initiatorsKeysIndex);
             if (channelInitiator) {
 
-              manageInitiator(aChannel, aChannelUser, channelInitiator);
+              manageInitiator(initiatorsKeysIndex, aChannelUser, channelInitiator);
             } else {
 
-              removeListenerForChannel(this, aChannel, aChannelUser);
+              removeListenerForChannel(this, initiatorsKeysIndex, aChannelUser);
             }
 
             if (channelInitiatorWaiters) {
 
-              manageInitiatorWaiter(aChannel, aChannelUser, channelInitiatorWaiters);
+              manageInitiatorWaiter(initiatorsKeysIndex, aChannelUser, channelInitiatorWaiters);
             }
 
             if (approvedUsersInChannel) {
 
-              manageApprovedUser(aChannel, aChannelUser, approvedUsersInChannel);
+              manageApprovedUser(initiatorsKeysIndex, aChannelUser, approvedUsersInChannel);
             }
           }
         }
