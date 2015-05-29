@@ -10,683 +10,698 @@
     , iceCandidates = {}
     , getInitiatorForChannel = function getInitiatorForChannel(channel) {
 
-        if (!channel) {
+      if (!channel) {
 
-          throw 'channel name [channel] provided is invalid';
-        }
-
-        return initiators[channel];
+        throw 'channel name [channel] provided is invalid';
       }
+
+      return initiators[channel];
+    }
     , setInitiatorForChannel = function setInitiatorForChannel(channel, who) {
 
-        if (!channel ||
-            !who) {
-
-          throw 'channel name [channel] or user [who] provided are invalid';
-        }
-
-        var initiatorForChannel = getInitiatorForChannel(channel);
-        if (!initiatorForChannel) {
-
-          initiators[channel] = who;
-        } else {
-
-          /*eslint-disable no-console*/
-          console.warn('initiator is already present. The returned value is,', initiatorForChannel);
-          /*eslint-enable no-console*/
-        }
-      }
-    , removeInitiatorForChannel = function removeInitiatorForChannel(channel) {
-
-        if (!channel) {
-
-          throw 'channel name [channel] provided is invalid';
-        }
-
-        if (channel[channel]) {
-
-          delete initiators[channel];
-        } else {
-
-          /*eslint-disable no-console*/
-          console.warn('no initiator for channel', channel);
-          /*eslint-enable no-console*/
-        }
-      }
-    , addListenerForChannel = function addListenerForChannel(channel, who) {
-
-        if (!channel ||
-            !who) {
-
-          throw 'channel name [channel] or user [who] provided are invalid';
-        }
-
-        var initiatorForChannel = getInitiatorForChannel(channel);
-        if (initiatorForChannel && initiatorForChannel !== who ||
-          !initiatorForChannel) {
-
-          if (!listeners[channel]) {
-
-            listeners[channel] = [];
-          }
-
-          if (listeners[channel].indexOf(who) < 0) {
-
-            listeners[channel].push(who);
-          } else {
-
-            /*eslint-disable no-console*/
-            console.warn('user [who]', who, 'already in listeners');
-            /*eslint-enable no-console*/
-          }
-        } else {
-
-          /*eslint-disable no-console*/
-          console.warn('un-managed scenario...');
-          /*eslint-enable no-console*/
-        }
-      }
-    , removeListenerForChannel = function removeListenerForChannel(channel, who) {
-
-        if (!channel ||
+      if (!channel ||
           !who) {
 
-          throw 'channel name [channel] or user [who] provided are invalid';
-        }
-
-        if (listeners[channel]) {
-
-          var indexOfUser = listeners[channel].indexOf(who);
-          if (indexOfUser >= 0) {
-
-            listeners[channel].splice(indexOfUser, 1);
-          } else {
-
-            /*eslint-disable no-console*/
-            console.warn('user [who]', who, 'not in listeners');
-            /*eslint-enable no-console*/
-          }
-        } else {
-
-          throw 'no listeners for channel [channel] ' + channel;
-        }
+        throw 'channel name [channel] or user [who] provided are invalid';
       }
-    , getListenersForChannel = function getListenersForChannel(channel) {
 
-        if (!channel) {
+      var initiatorForChannel = getInitiatorForChannel(channel);
 
-          throw 'channel name [channel] provided is invalid';
-        }
+      if (initiatorForChannel) {
+
+        /*eslint-disable no-console*/
+        console.warn('initiator is already present. The returned value is,', initiatorForChannel);
+        /*eslint-enable no-console*/
+      } else {
+
+        initiators[channel] = who;
+      }
+    }
+    , removeInitiatorForChannel = function removeInitiatorForChannel(channel) {
+
+      if (!channel) {
+
+        throw 'channel name [channel] provided is invalid';
+      }
+
+      if (channel[channel]) {
+
+        delete initiators[channel];
+      } else {
+
+        /*eslint-disable no-console*/
+        console.warn('no initiator for channel', channel);
+        /*eslint-enable no-console*/
+      }
+    }
+    , addListenerForChannel = function addListenerForChannel(channel, who) {
+
+      if (!channel ||
+          !who) {
+
+        throw 'channel name [channel] or user [who] provided are invalid';
+      }
+
+      var initiatorForChannel = getInitiatorForChannel(channel);
+
+      if (initiatorForChannel && initiatorForChannel !== who ||
+        !initiatorForChannel) {
 
         if (!listeners[channel]) {
 
-          return [];
+          listeners[channel] = [];
         }
 
-        return listeners[channel];
-      }
-    , addInitiatorWaiterForChannel = function addInitiatorWaiterForChannel(channel, who) {
+        if (listeners[channel].indexOf(who) < 0) {
 
-        if (!channel ||
-          !who) {
-
-          throw 'channel name [channel] provided is invalid';
-        }
-
-        if (!waiters[channel]) {
-
-          waiters[channel] = [];
-        }
-
-        waiters[channel].push(who);
-      }
-    , removeInitiatorWaiterForChannel = function removeInitiatorWaiterForChannel(channel, who) {
-
-        if (!channel ||
-          !who) {
-
-          throw 'channel name [channel] or user [who] provided are invalid';
-        }
-
-        if (waiters[channel]) {
-
-          var indexOfUser = waiters[channel].indexOf(who);
-          if (indexOfUser >= 0) {
-
-            waiters[channel].splice(indexOfUser, 1);
-          } else {
-
-            /*eslint-disable no-console*/
-            console.warn('user [who]', who, 'not in waiters');
-            /*eslint-enable no-console*/
-          }
-        } else {
-
-          throw 'no waiters for channel [channel] ' + channel;
-        }
-      }
-    , getInitiatorWaitersForChannel = function getInitiatorWaitersForChannel(channel) {
-
-        if (!channel) {
-
-          throw 'channel name [channel] provided is invalid';
-        }
-
-        if (!waiters[channel]) {
-
-          return [];
-        }
-
-        return waiters[channel];
-      }
-    , addApprovedUserForChannel = function addApprovedUserForChannel(channel, who) {
-
-        if (!channel ||
-          !who) {
-
-          throw 'channel name [channel] or user [who] provided are invalid';
-        }
-
-        if (!approvedUsers[channel]) {
-
-          approvedUsers[channel] = [];
-        }
-
-        approvedUsers[channel].push(who);
-      }
-    , removeApprovedUserForChannel = function removeApprovedUserForChannel(channel, who) {
-
-        if (!channel ||
-          !who) {
-
-          throw 'channel name [channel] or user [who] provided are invalid';
-        }
-
-        if (approvedUsers[channel]) {
-
-          var indexOfUser = approvedUsers[channel].indexOf(who);
-          if (indexOfUser >= 0) {
-
-            approvedUsers[channel].splice(indexOfUser, 1);
-          } else {
-
-            /*eslint-disable no-console*/
-            console.warn('user [who]', who, 'not in approved users');
-            /*eslint-enable no-console*/
-          }
-        } else {
-
-          throw 'no approved users for channel [channel] ' + channel;
-        }
-      }
-    , getApprovedUsersForChannel = function getApprovedUsersForChannel(channel) {
-
-        if (!channel) {
-
-          throw 'channel name [channel] provided is invalid';
-        }
-
-        if (!approvedUsers[channel]) {
-
-          return [];
-        }
-
-        return approvedUsers[channel];
-      }
-    , setOfferForUserInChannel = function setOfferForUserInChannel(channel, who, offer) {
-
-        if (!channel ||
-          !who ||
-          !offer) {
-
-          throw 'channel name [channel], user [who] or offer [offer] provided are invalid';
-        }
-
-        if (!offers[channel]) {
-
-          offers[channel] = {
-            'who': who,
-            'offer': offer
-          };
+          listeners[channel].push(who);
         } else {
 
           /*eslint-disable no-console*/
-          console.warn('There already is an offer for channel', channel, 'identified by', offers[channel]);
+          console.warn('user [who]', who, 'already in listeners');
           /*eslint-enable no-console*/
         }
-      }
-    , getOfferForChannel = function getOfferForChannel(channel) {
-
-        if (!channel) {
-
-          throw 'channel name [channel] provided is invalid';
-        }
-
-        if (offers[channel]) {
-
-          var toReturn = offers[channel];
-          delete offers[channel];
-          return toReturn;
-        }
+      } else {
 
         /*eslint-disable no-console*/
-        console.warn('Offer for channel', channel, 'isn\'t present.');
+        console.warn('un-managed scenario...');
         /*eslint-enable no-console*/
       }
-    , addIceCandidateForUserInChannel = function addIceCandidateForUserInChannel(channel, who, iceCandidate) {
+    }
+    , removeListenerForChannel = function removeListenerForChannel(channel, who) {
 
-        if (!channel ||
-          !who ||
-          !iceCandidate) {
+      if (!channel ||
+        !who) {
 
-          throw 'channel name [channel], user [who] or offer [offer] provided are invalid';
-        }
-
-        if (!iceCandidates[channel]) {
-
-          iceCandidates[channel] = {};
-        }
-
-        if (!iceCandidates[channel][who]) {
-
-          iceCandidates[channel][who] = [];
-        }
-
-        iceCandidates[channel][who].push(iceCandidate);
+        throw 'channel name [channel] or user [who] provided are invalid';
       }
-    , getIceCandidatesForUserInChannel = function getIceCandidatesForUserInChannel(channel, who) {
 
-        if (!channel ||
-          !who) {
+      if (listeners[channel]) {
 
-          throw 'channel name [channel] or user [who] provided are invalid';
-        }
+        var indexOfUser = listeners[channel].indexOf(who);
 
-        if (!iceCandidates[channel] ||
-          !iceCandidates[channel][who]) {
+        if (indexOfUser >= 0) {
 
-          return [];
-        }
-
-        var candidates = iceCandidates[channel][who];
-        return candidates.splice(0, candidates.length);
-      }
-    , getInitiatorAndApprovedUsersForChannel = function getInitiatorAndApprovedUsersForChannel(channel) {
-
-        if (!channel) {
-
-          throw 'channel [channel] provided is invalid';
-        }
-
-        var initiator = getInitiatorForChannel(channel)
-          , theApprovedUsers = getApprovedUsersForChannel(channel);
-        if (initiator &&
-          theApprovedUsers) {
-
-          return {
-            'initiator': initiator,
-            'approvedUsers': theApprovedUsers
-          };
-        }
-
-        /*eslint-disable no-console*/
-        console.warn('initiator', initiator, 'or approvedUsers', theApprovedUsers, 'are undefined');
-        /*eslint-enable no-console*/
-      }
-    , manageInitiator = function manageInitiator(theChannel, theChannelUser, initiator) {
-
-        if (initiator &&
-          theChannelUser === initiator) {
-
-            // XXX is the owner of channel. I should kick all the other users.
-            removeInitiatorForChannel(theChannel);
+          listeners[channel].splice(indexOfUser, 1);
         } else {
 
-          removeListenerForChannel(theChannel, theChannelUser);
+          /*eslint-disable no-console*/
+          console.warn('user [who]', who, 'not in listeners');
+          /*eslint-enable no-console*/
         }
+      } else {
+
+        throw 'no listeners for channel [channel] ' + channel;
       }
+    }
+    , getListenersForChannel = function getListenersForChannel(channel) {
+
+      if (!channel) {
+
+        throw 'channel name [channel] provided is invalid';
+      }
+
+      if (!listeners[channel]) {
+
+        return [];
+      }
+
+      return listeners[channel];
+    }
+    , addInitiatorWaiterForChannel = function addInitiatorWaiterForChannel(channel, who) {
+
+      if (!channel ||
+        !who) {
+
+        throw 'channel name [channel] provided is invalid';
+      }
+
+      if (!waiters[channel]) {
+
+        waiters[channel] = [];
+      }
+
+      waiters[channel].push(who);
+    }
+    , removeInitiatorWaiterForChannel = function removeInitiatorWaiterForChannel(channel, who) {
+
+      if (!channel ||
+        !who) {
+
+        throw 'channel name [channel] or user [who] provided are invalid';
+      }
+
+      if (waiters[channel]) {
+
+        var indexOfUser = waiters[channel].indexOf(who);
+
+        if (indexOfUser >= 0) {
+
+          waiters[channel].splice(indexOfUser, 1);
+        } else {
+
+          /*eslint-disable no-console*/
+          console.warn('user [who]', who, 'not in waiters');
+          /*eslint-enable no-console*/
+        }
+      } else {
+
+        throw 'no waiters for channel [channel] ' + channel;
+      }
+    }
+    , getInitiatorWaitersForChannel = function getInitiatorWaitersForChannel(channel) {
+
+      if (!channel) {
+
+        throw 'channel name [channel] provided is invalid';
+      }
+
+      if (!waiters[channel]) {
+
+        return [];
+      }
+
+      return waiters[channel];
+    }
+    , addApprovedUserForChannel = function addApprovedUserForChannel(channel, who) {
+
+      if (!channel ||
+        !who) {
+
+        throw 'channel name [channel] or user [who] provided are invalid';
+      }
+
+      if (!approvedUsers[channel]) {
+
+        approvedUsers[channel] = [];
+      }
+
+      approvedUsers[channel].push(who);
+    }
+    , removeApprovedUserForChannel = function removeApprovedUserForChannel(channel, who) {
+
+      if (!channel ||
+        !who) {
+
+        throw 'channel name [channel] or user [who] provided are invalid';
+      }
+
+      if (approvedUsers[channel]) {
+
+        var indexOfUser = approvedUsers[channel].indexOf(who);
+
+        if (indexOfUser >= 0) {
+
+          approvedUsers[channel].splice(indexOfUser, 1);
+        } else {
+
+          /*eslint-disable no-console*/
+          console.warn('user [who]', who, 'not in approved users');
+          /*eslint-enable no-console*/
+        }
+      } else {
+
+        throw 'no approved users for channel [channel] ' + channel;
+      }
+    }
+    , getApprovedUsersForChannel = function getApprovedUsersForChannel(channel) {
+
+      if (!channel) {
+
+        throw 'channel name [channel] provided is invalid';
+      }
+
+      if (!approvedUsers[channel]) {
+
+        return [];
+      }
+
+      return approvedUsers[channel];
+    }
+    , setOfferForUserInChannel = function setOfferForUserInChannel(channel, who, offer) {
+
+      if (!channel ||
+        !who ||
+        !offer) {
+
+        throw 'channel name [channel], user [who] or offer [offer] provided are invalid';
+      }
+
+      if (offers[channel]) {
+
+        /*eslint-disable no-console*/
+        console.warn('There already is an offer for channel', channel, 'identified by', offers[channel]);
+        /*eslint-enable no-console*/
+      } else {
+
+        offers[channel] = {
+          'who': who,
+          'offer': offer
+        };
+      }
+    }
+    , getOfferForChannel = function getOfferForChannel(channel) {
+
+      if (!channel) {
+
+        throw 'channel name [channel] provided is invalid';
+      }
+
+      if (offers[channel]) {
+
+        var toReturn = offers[channel];
+
+        delete offers[channel];
+        return toReturn;
+      }
+
+      /*eslint-disable no-console*/
+      console.warn('Offer for channel', channel, 'isn\'t present.');
+      /*eslint-enable no-console*/
+    }
+    , addIceCandidateForUserInChannel = function addIceCandidateForUserInChannel(channel, who, iceCandidate) {
+
+      if (!channel ||
+        !who ||
+        !iceCandidate) {
+
+        throw 'channel name [channel], user [who] or offer [offer] provided are invalid';
+      }
+
+      if (!iceCandidates[channel]) {
+
+        iceCandidates[channel] = {};
+      }
+
+      if (!iceCandidates[channel][who]) {
+
+        iceCandidates[channel][who] = [];
+      }
+
+      iceCandidates[channel][who].push(iceCandidate);
+    }
+    , getIceCandidatesForUserInChannel = function getIceCandidatesForUserInChannel(channel, who) {
+
+      if (!channel ||
+        !who) {
+
+        throw 'channel name [channel] or user [who] provided are invalid';
+      }
+
+      if (!iceCandidates[channel] ||
+        !iceCandidates[channel][who]) {
+
+        return [];
+      }
+
+      var candidates = iceCandidates[channel][who];
+
+      return candidates.splice(0, candidates.length);
+    }
+    , getInitiatorAndApprovedUsersForChannel = function getInitiatorAndApprovedUsersForChannel(channel) {
+
+      if (!channel) {
+
+        throw 'channel [channel] provided is invalid';
+      }
+
+      var initiator = getInitiatorForChannel(channel)
+        , theApprovedUsers = getApprovedUsersForChannel(channel);
+
+      if (initiator &&
+        theApprovedUsers) {
+
+        return {
+          'initiator': initiator,
+          'approvedUsers': theApprovedUsers
+        };
+      }
+
+      /*eslint-disable no-console*/
+      console.warn('initiator', initiator, 'or approvedUsers', theApprovedUsers, 'are undefined');
+      /*eslint-enable no-console*/
+    }
+    , manageInitiator = function manageInitiator(theChannel, theChannelUser, initiator) {
+
+      if (initiator &&
+        theChannelUser === initiator) {
+
+        // XXX is the owner of channel. I should kick all the other users.
+        removeInitiatorForChannel(theChannel);
+      } else {
+
+        removeListenerForChannel(theChannel, theChannelUser);
+      }
+    }
     , manageInitiatorWaiter = function manageInitiatorWaiter(theChannel, theChannelUser, inititatorWaiters) {
 
-        if (inititatorWaiters) {
+      if (inititatorWaiters) {
 
-          var waitersForInitiatorForChannelLength = inititatorWaiters.length
-            , eliminateUserFromInitiatorWaitersInChannel = false
-            , usersWaitingForInitiatorIndex = 0
-            , aUserWaitingForInitiatorForChannel;
-          for (; usersWaitingForInitiatorIndex < waitersForInitiatorForChannelLength; usersWaitingForInitiatorIndex += 1) {
+        var waitersForInitiatorForChannelLength = inititatorWaiters.length
+          , eliminateUserFromInitiatorWaitersInChannel = false
+          , usersWaitingForInitiatorIndex = 0
+          , aUserWaitingForInitiatorForChannel;
 
-            aUserWaitingForInitiatorForChannel = inititatorWaiters[usersWaitingForInitiatorIndex];
-            if (aUserWaitingForInitiatorForChannel === theChannelUser) {
+        for (; usersWaitingForInitiatorIndex < waitersForInitiatorForChannelLength; usersWaitingForInitiatorIndex += 1) {
 
-              eliminateUserFromInitiatorWaitersInChannel = true;
-              break;
-            }
-          }
+          aUserWaitingForInitiatorForChannel = inititatorWaiters[usersWaitingForInitiatorIndex];
+          if (aUserWaitingForInitiatorForChannel === theChannelUser) {
 
-          if (eliminateUserFromInitiatorWaitersInChannel) {
-
-            removeInitiatorWaiterForChannel(theChannel, theChannelUser);
+            eliminateUserFromInitiatorWaitersInChannel = true;
+            break;
           }
         }
+
+        if (eliminateUserFromInitiatorWaitersInChannel) {
+
+          removeInitiatorWaiterForChannel(theChannel, theChannelUser);
+        }
       }
+    }
     , manageApprovedUser = function manageApprovedUser(theChannel, theChannelUser, theApprovedUsers) {
 
-        if (theApprovedUsers) {
+      if (theApprovedUsers) {
 
-          var usersApprovedInChannelLength = theApprovedUsers.length
-            , eliminateUserFromApprovedInChannel = false
-            , usersApprovedInChannelIndex = 0
-            , aUserApprovedInChannel;
-          for (; usersApprovedInChannelIndex < usersApprovedInChannelLength; usersApprovedInChannelIndex += 1) {
+        var usersApprovedInChannelLength = theApprovedUsers.length
+          , eliminateUserFromApprovedInChannel = false
+          , usersApprovedInChannelIndex = 0
+          , aUserApprovedInChannel;
 
-            aUserApprovedInChannel = theApprovedUsers[usersApprovedInChannelIndex];
-            if (aUserApprovedInChannel === theChannelUser) {
+        for (; usersApprovedInChannelIndex < usersApprovedInChannelLength; usersApprovedInChannelIndex += 1) {
 
-              eliminateUserFromApprovedInChannel = true;
-              break;
-            }
-          }
+          aUserApprovedInChannel = theApprovedUsers[usersApprovedInChannelIndex];
+          if (aUserApprovedInChannel === theChannelUser) {
 
-          if (eliminateUserFromApprovedInChannel) {
-
-            removeApprovedUserForChannel(theChannel, theChannelUser);
+            eliminateUserFromApprovedInChannel = true;
+            break;
           }
         }
+
+        if (eliminateUserFromApprovedInChannel) {
+
+          removeApprovedUserForChannel(theChannel, theChannelUser);
+        }
       }
+    }
     , isEmpty = function isEmpty(map) {
-        for (var key in map) {
+      for (var key in map) {
 
-          if (map.hasOwnProperty(key)) {
+        if (map.hasOwnProperty(key)) {
 
-            return false;
-          }
+          return false;
         }
-        return true;
       }
+      return true;
+    }
     , leave = function leave(whoami) {
 
-        var initiatorsKeys = Object.keys(initiators)
-          , initiatorsKeysLength = initiatorsKeys.length
-          , initiatorsKeysIndex = 0
-          , anInitiatorChannel
-          , channelInitiator
-          , channelInitiatorWaiters
-          , approvedUsersInChannel
-          , listenersKeys = Object.keys(listeners)
-          , listenersKeysIndex = 0
-          , listenersKeysLength = listenersKeys.length
-          , aListenersChannel
-          , aListenersChannelIndex = 0
-          , waitersKeys = Object.keys(waiters)
-          , waitersKeysIndex = 0
-          , waitersKeysLength = waitersKeys.length
-          , aWaitersChannel
-          , aWaitersChannelIndex = 0
-          , approvedUsersKeys = Object.keys(approvedUsers)
-          , approvedUsersKeysIndex = 0
-          , approvedUsersKeysLength = approvedUsersKeys.length
-          , anApprovedUsersChannel
-          , anApprovedUsersChannelIndex = 0
-          , offersKeys = Object.keys(offers)
-          , offersKeysIndex = 0
-          , offersKeysLength = offersKeys.length
-          , anOffersChannel
-          , iceCandidatesKeys = Object.keys(iceCandidates)
-          , iceCandidatesKeysIndex = 0
-          , iceCandidatesKeysLength = iceCandidatesKeys.length
-          , anIceCandidatesChannel
-          , anIceCandidatesChannelKeys
-          , anIceCandidatesChannelKeysIndex = 0;
-        for (; initiatorsKeysIndex < initiatorsKeysLength; initiatorsKeysIndex += 1) {
+      var initiatorsKeys = Object.keys(initiators)
+        , initiatorsKeysLength = initiatorsKeys.length
+        , initiatorsKeysIndex = 0
+        , anInitiatorChannel
+        , channelInitiator
+        , channelInitiatorWaiters
+        , approvedUsersInChannel
+        , listenersKeys = Object.keys(listeners)
+        , listenersKeysIndex = 0
+        , listenersKeysLength = listenersKeys.length
+        , aListenersChannel
+        , aListenersChannelIndex = 0
+        , waitersKeys = Object.keys(waiters)
+        , waitersKeysIndex = 0
+        , waitersKeysLength = waitersKeys.length
+        , aWaitersChannel
+        , aWaitersChannelIndex = 0
+        , approvedUsersKeys = Object.keys(approvedUsers)
+        , approvedUsersKeysIndex = 0
+        , approvedUsersKeysLength = approvedUsersKeys.length
+        , anApprovedUsersChannel
+        , anApprovedUsersChannelIndex = 0
+        , offersKeys = Object.keys(offers)
+        , offersKeysIndex = 0
+        , offersKeysLength = offersKeys.length
+        , anOffersChannel
+        , iceCandidatesKeys = Object.keys(iceCandidates)
+        , iceCandidatesKeysIndex = 0
+        , iceCandidatesKeysLength = iceCandidatesKeys.length
+        , anIceCandidatesChannel
+        , anIceCandidatesChannelKeys
+        , anIceCandidatesChannelKeysIndex = 0;
 
-          anInitiatorChannel = initiatorsKeys[initiatorsKeysIndex];
-          if (anInitiatorChannel &&
-            anInitiatorChannel === whoami) {
+      for (; initiatorsKeysIndex < initiatorsKeysLength; initiatorsKeysIndex += 1) {
 
-            delete initiators[anInitiatorChannel];
-            channelInitiator = getInitiatorForChannel(initiatorsKeysIndex);
-            channelInitiatorWaiters = getInitiatorWaitersForChannel(initiatorsKeysIndex);
-            approvedUsersInChannel = getApprovedUsersForChannel(initiatorsKeysIndex);
-            if (channelInitiator) {
+        anInitiatorChannel = initiatorsKeys[initiatorsKeysIndex];
+        if (anInitiatorChannel &&
+          anInitiatorChannel === whoami) {
 
-              manageInitiator(initiatorsKeysIndex, aChannelUser, channelInitiator);
-            } else {
+          delete initiators[anInitiatorChannel];
+          channelInitiator = getInitiatorForChannel(initiatorsKeysIndex);
+          channelInitiatorWaiters = getInitiatorWaitersForChannel(initiatorsKeysIndex);
+          approvedUsersInChannel = getApprovedUsersForChannel(initiatorsKeysIndex);
+          if (channelInitiator) {
 
-              removeListenerForChannel(this, initiatorsKeysIndex, aChannelUser);
-            }
+            manageInitiator(initiatorsKeysIndex, aChannelUser, channelInitiator);
+          } else {
 
-            if (channelInitiatorWaiters) {
+            removeListenerForChannel(this, initiatorsKeysIndex, aChannelUser);
+          }
 
-              manageInitiatorWaiter(initiatorsKeysIndex, aChannelUser, channelInitiatorWaiters);
-            }
+          if (channelInitiatorWaiters) {
 
-            if (approvedUsersInChannel) {
+            manageInitiatorWaiter(initiatorsKeysIndex, aChannelUser, channelInitiatorWaiters);
+          }
 
-              manageApprovedUser(initiatorsKeysIndex, aChannelUser, approvedUsersInChannel);
+          if (approvedUsersInChannel) {
+
+            manageApprovedUser(initiatorsKeysIndex, aChannelUser, approvedUsersInChannel);
+          }
+        }
+      }
+
+      for (; listenersKeysIndex < listenersKeysLength; listenersKeysIndex += 1) {
+
+        aListenersChannel = listeners[listenersKeys[listenersKeysIndex]];
+        for (aListenersChannelIndex = 0; aListenersChannelIndex < aListenersChannel.length; aListenersChannelIndex += 1) {
+
+          if (aListenersChannel[aListenersChannelIndex] &&
+            aListenersChannel[aListenersChannelIndex] === whoami) {
+
+            listeners[listenersKeys[listenersKeysIndex]].splice(aListenersChannelIndex, 1);
+            if (listeners[listenersKeys[listenersKeysIndex]].length === 0) {
+
+              delete listeners[listenersKeys[listenersKeysIndex]];
             }
           }
         }
+      }
 
-        for (; listenersKeysIndex < listenersKeysLength; listenersKeysIndex += 1) {
+      for (; waitersKeysIndex < waitersKeysLength; waitersKeysIndex += 1) {
 
-          aListenersChannel = listeners[listenersKeys[listenersKeysIndex]];
-          for (aListenersChannelIndex = 0; aListenersChannelIndex < aListenersChannel.length; aListenersChannelIndex += 1) {
+        aWaitersChannel = waiters[waitersKeys[waitersKeysIndex]];
+        for (aWaitersChannelIndex = 0; aWaitersChannelIndex < aWaitersChannel.length; aWaitersChannelIndex += 1) {
 
-            if (aListenersChannel[aListenersChannelIndex] &&
-              aListenersChannel[aListenersChannelIndex] === whoami) {
+          if (aWaitersChannel[aWaitersChannelIndex] &&
+            aWaitersChannel[aWaitersChannelIndex] === whoami) {
 
-              listeners[listenersKeys[listenersKeysIndex]].splice(aListenersChannelIndex, 1);
-              if (listeners[listenersKeys[listenersKeysIndex]].length === 0) {
+            waiters[waitersKeys[waitersKeysIndex]].splice(aWaitersChannelIndex, 1);
+            if (waiters[waitersKeys[waitersKeysIndex]].length === 0) {
 
-                delete listeners[listenersKeys[listenersKeysIndex]];
+              delete waiters[waitersKeys[waitersKeysIndex]];
+            }
+          }
+        }
+      }
+
+      for (; approvedUsersKeysIndex < approvedUsersKeysLength; approvedUsersKeysIndex += 1) {
+
+        anApprovedUsersChannel = approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]];
+        for (anApprovedUsersChannelIndex = 0; anApprovedUsersChannelIndex < anApprovedUsersChannel.length; anApprovedUsersChannelIndex += 1) {
+
+          if (anApprovedUsersChannel[anApprovedUsersChannelIndex] &&
+            anApprovedUsersChannel[anApprovedUsersChannelIndex] === whoami) {
+
+            approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]].splice(anApprovedUsersChannelIndex, 1);
+            if (approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]].length === 0) {
+
+              delete approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]];
+            }
+          }
+        }
+      }
+
+      for (; offersKeysIndex < offersKeysLength; offersKeysIndex += 1) {
+
+        anOffersChannel = offers[offersKeys[offersKeysIndex]];
+        if (anOffersChannel &&
+          anOffersChannel.who === whoami) {
+
+          delete offers[offersKeys[offersKeysIndex]];
+        }
+      }
+
+      for (; iceCandidatesKeysIndex < iceCandidatesKeysLength; iceCandidatesKeysIndex += 1) {
+
+        anIceCandidatesChannel = iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]];
+        if (anIceCandidatesChannel) {
+
+          anIceCandidatesChannelKeys = Object.keys(anIceCandidatesChannel);
+          for (anIceCandidatesChannelKeysIndex = 0; anIceCandidatesChannelKeysIndex < anIceCandidatesChannelKeys.length; anIceCandidatesChannelKeysIndex += 1) {
+
+            if (anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex] &&
+              anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex] === whoami) {
+
+              delete iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]][anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex]];
+              if (isEmpty(iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]])) {
+
+                delete iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]];
               }
             }
           }
         }
-
-        for (; waitersKeysIndex < waitersKeysLength; waitersKeysIndex += 1) {
-
-          aWaitersChannel = waiters[waitersKeys[waitersKeysIndex]];
-          for (aWaitersChannelIndex = 0; i < aWaitersChannel.length; aWaitersChannelIndex += 1) {
-
-            if (aWaitersChannel[aWaitersChannelIndex] &&
-              aWaitersChannel[aWaitersChannelIndex] === whoami) {
-
-              waiters[waitersKeys[waitersKeysIndex]].splice(aWaitersChannelIndex, 1);
-              if (waiters[waitersKeys[waitersKeysIndex]].length === 0) {
-
-                delete waiters[waitersKeys[waitersKeysIndex]];
-              }
-            }
-          }
-        }
-
-        for (; approvedUsersKeysIndex < approvedUsersKeysLength; approvedUsersKeysIndex += 1) {
-
-          anApprovedUsersChannel = approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]];
-          for (anApprovedUsersChannelIndex = 0; anApprovedUsersChannelIndex < anApprovedUsersChannel.length; anApprovedUsersChannelIndex += 1) {
-
-            if (anApprovedUsersChannel[anApprovedUsersChannelIndex] &&
-              anApprovedUsersChannel[anApprovedUsersChannelIndex] === whoami) {
-
-              approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]].splice(anApprovedUsersChannelIndex, 1);
-              if (approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]].length === 0) {
-
-                delete approvedUsers[approvedUsersKeys[approvedUsersKeysIndex]];
-              }
-            }
-          }
-        }
-
-        for (; offersKeysIndex < offersKeysLength; offersKeysIndex += 1) {
-
-          anOffersChannel = offers[offersKeys[offersKeysIndex]];
-          if (anOffersChannel &&
-            anOffersChannel.who === whoami) {
-
-            delete offers[offersKeys[offersKeysIndex]];
-          }
-        }
-
-        for (; iceCandidatesKeysIndex < iceCandidatesKeysLength; iceCandidatesKeysIndex += 1) {
-
-          anIceCandidatesChannel = iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]]
-          if (anIceCandidatesChannel) {
-
-            anIceCandidatesChannelKeys = Object.keys(anIceCandidatesChannel);
-            for (anIceCandidatesChannelKeysIndex = 0; anIceCandidatesChannelKeysIndex < anIceCandidatesChannelKeys.length; anIceCandidatesChannelKeysIndex += 1) {
-
-              if (anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex] &&
-                anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex] === whoami) {
-
-                delete iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]][anIceCandidatesChannelKeys[anIceCandidatesChannelKeysIndex]];
-                if (isEmpty(iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]])) {
-
-                  delete iceCandidates[iceCandidatesKeys[iceCandidatesKeysIndex]];
-                }
-              }
-            }
-          }
-        }
-      };
+      }
+    };
 
   module.exports = function signalerExport(saltKey) {
 
     var comunicator = require('comunicator')(saltKey)
       , addOfferForChannel = function addOfferForChannel(offer, whoami, channel) {
 
-          var waiters = getInitiatorWaitersForChannel(channel)
-            , firstWaiter
-            , waitersIndex
-            , aWaiter;
-          if (waiters &&
-              waiters.length > 0) {
+        var waiters = getInitiatorWaitersForChannel(channel)
+          , firstWaiter
+          , waitersIndex
+          , aWaiter;
 
-            firstWaiter = waiters[0];
-            if (firstWaiter &&
-              firstWaiter.length > 0) {
+        if (waiters &&
+            waiters.length > 0) {
 
-              comunicator.sendTo(whoami, firstWaiter, {
-                'scope': 'offer',
-                'channel': channel,
-                'data': offer
-              });
-              removeInitiatorWaiterForChannel(channel, firstWaiter);
-            }
+          firstWaiter = waiters[0];
+          if (firstWaiter &&
+            firstWaiter.length > 0) {
 
-            if (waiters.length > 1) {
-
-              for (waitersIndex = 1; waitersIndex < waiters.length; waitersIndex += 1) {
-
-                aWaiter = waiters[waitersIndex];
-                comunicator.sendTo(whoami, aWaiter, {
-                  'scope': 'redo-join',
-                  'channel': channel
-                });
-                removeInitiatorWaiterForChannel(channel, aWaiter);
-              }
-            }
-          } else {
-
-            setOfferForUserInChannel(channel, whoami, offer);
-          }
-        }
-      , sendOffersTo = function sendOffersTo(aWebSocket, whoami, channel) {
-
-          var initiator = getInitiatorForChannel(channel)
-            , offer = getOfferForChannel(channel)
-            , who
-            , offerToSend;
-
-          if (offer) {
-
-            who = Object.keys(offer)[0];
-            offerToSend = offer[who]
-            comunicator.sendTo(whoami, who, {
+            comunicator.sendTo(whoami, firstWaiter, {
               'scope': 'offer',
               'channel': channel,
               'data': offer
             });
-          } else if (initiator) {
-
-            comunicator.sendTo(whoami, initiator, {
-              'scope': 'p2p-inst',
-              'channel': channel
-            });
-          } else {
-
-            addInitiatorWaiterForChannel(channel, whoami);
+            removeInitiatorWaiterForChannel(channel, firstWaiter);
           }
+
+          if (waiters.length > 1) {
+
+            for (waitersIndex = 1; waitersIndex < waiters.length; waitersIndex += 1) {
+
+              aWaiter = waiters[waitersIndex];
+              comunicator.sendTo(whoami, aWaiter, {
+                'scope': 'redo-join',
+                'channel': channel
+              });
+              removeInitiatorWaiterForChannel(channel, aWaiter);
+            }
+          }
+        } else {
+
+          setOfferForUserInChannel(channel, whoami, offer);
         }
+      }
+      , sendOffersTo = function sendOffersTo(aWebSocket, whoami, channel) {
+
+        var initiator = getInitiatorForChannel(channel)
+          , offer = getOfferForChannel(channel)
+          , who
+          , offerToSend;
+
+        if (offer) {
+
+          who = Object.keys(offer)[0];
+          offerToSend = offer[who];
+          comunicator.sendTo(whoami, who, {
+            'scope': 'offer',
+            'channel': channel,
+            'data': offer
+          });
+        } else if (initiator) {
+
+          comunicator.sendTo(whoami, initiator, {
+            'scope': 'p2p-inst',
+            'channel': channel
+          });
+        } else {
+
+          addInitiatorWaiterForChannel(channel, whoami);
+        }
+      }
       , sendAnswerTo = function sendAnswerTo(channel, who, whoami, answer) {
 
-          comunicator.sendTo(whoami, who, {
-            'scope': 'answer',
-            'channel': channel,
-            'data': answer
-          });
-        }
+        comunicator.sendTo(whoami, who, {
+          'scope': 'answer',
+          'channel': channel,
+          'data': answer
+        });
+      }
       , sendCandidatesTo = function sendCandidatesTo(who, whoami, channel) {
 
-          var iceCandidates = getIceCandidatesForUserInChannel(channel, who);
-          if (iceCandidates &&
-            iceCandidates.length > 0) {
+        var iceCandidates = getIceCandidatesForUserInChannel(channel, who);
 
-            comunicator.sendTo(whoami, who, {
-              'scope': 'candidate',
-              'channel': channel,
-              'data': iceCandidates
-            });
-          }
-        }
-      , sendP2PIsInst = function sendP2PIsInst(channel, who, whoami) {
+        if (iceCandidates &&
+          iceCandidates.length > 0) {
 
           comunicator.sendTo(whoami, who, {
-              'scope': 'p2p-is-inst',
-              'channel': channel
+            'scope': 'candidate',
+            'channel': channel,
+            'data': iceCandidates
           });
         }
+      }
+      , sendP2PIsInst = function sendP2PIsInst(channel, who, whoami) {
+
+        comunicator.sendTo(whoami, who, {
+          'scope': 'p2p-is-instantiated',
+          'channel': channel
+        });
+      }
       , sendUsersToConnectWithToApproved = function sendUsersToConnectWithToApproved(channel, who, whoami) {
 
-          var initiator = getInitiatorForChannel(channel)
-            , listenersForChannel = getListenersForChannel(channel)
-            , usersInChannel = Object.keys(listenersForChannel)
-            , ownerInChannel = usersInChannel.indexOf(whoami)
-            , approvedUserInChannel;
-          if (initiator &&
-              who &&
-              initiator === whoami) {
+        var initiator = getInitiatorForChannel(channel)
+          , listenersForChannel = getListenersForChannel(channel)
+          , usersInChannel = Object.keys(listenersForChannel)
+          , ownerInChannel = usersInChannel.indexOf(whoami)
+          , approvedUserInChannel;
 
-            if (ownerInChannel >= 0) {
+        if (initiator &&
+            who &&
+            initiator === whoami) {
 
-              usersInChannel.splice(ownerInChannel, 1);
-              approvedUserInChannel = usersInChannel.indexOf(who);
-              if (approvedUserInChannel >= 0) {
+          if (ownerInChannel >= 0) {
 
-                usersInChannel.splice(approvedUserInChannel, 1);
-                addApprovedUserForChannel(channel, who);
-                comunicator.sendTo(whoami, who, {
-                  'scope': 'approved',
-                  'channel': channel,
-                  'data': usersInChannel
-                });
-              }
+            usersInChannel.splice(ownerInChannel, 1);
+            approvedUserInChannel = usersInChannel.indexOf(who);
+            if (approvedUserInChannel >= 0) {
+
+              usersInChannel.splice(approvedUserInChannel, 1);
+              addApprovedUserForChannel(channel, who);
+              comunicator.sendTo(whoami, who, {
+                'scope': 'approved',
+                'channel': channel,
+                'data': usersInChannel
+              });
             }
           }
         }
+      }
       , sendNotApproval = function sendNotApproval(channel, who, whoami) {
 
-          var initiator = getInitiatorForChannel(channel);
-          if (who &&
-            initiator === whoami) {
+        var initiator = getInitiatorForChannel(channel);
 
-            removeApprovedUserForChannel(channel, who);
-            comunicator.sendTo(whoami, who, {
-              'scope': 'un-approved',
-              'channel': channel
-            });
-          }
-        };
+        if (who &&
+          initiator === whoami) {
+
+          removeApprovedUserForChannel(channel, who);
+          comunicator.sendTo(whoami, who, {
+            'scope': 'un-approved',
+            'channel': channel
+          });
+        }
+      };
 
     comunicator.on('comunicator:user-leave', leave);
     comunicator.on('comunicator:message-arrived', function onComunicatorMessage(payload) {
@@ -699,33 +714,44 @@
         payload.what.scope) {
 
         var messageBody = payload.what;
-        switch(messageBody.scope) {
-          case 'open':
 
+        switch (messageBody.scope) {
+          case 'open': {
+
+            /*
             if (parsedMsg.payload) {
 
               setInitiatorForChannel(messageBody.channel, payload.whoami);
               addOfferForChannel(messageBody.offer, parsedMsg.whoami, messageBody.channel);
-              if (parsedMsg.who) {//TODO: mh... need to review the client rigth now...
+              if (parsedMsg.who) {
 
                 sendP2PIsInst(parsedMsg.channel, parsedMsg.who, parsedMsg.whoami);
               }
             }
-          break;
+            */
+            break;
+          }
 
-          case 'join':
+          case 'join': {
 
+            /*
             addListenerForChannel(parsedMsg.channel, parsedMsg.whoami);
             sendOffersTo(aWebSocket, parsedMsg.whoami, parsedMsg.channel);
-          break;
+            */
+            break;
+          }
 
-          case 'answer':
+          case 'answer': {
 
+            /*
             sendAnswerTo(parsedMsg.channel, parsedMsg.who, parsedMsg.whoami, parsedMsg.payload);
-          break;
+            */
+            break;
+          }
 
-          case 'ice-candidate':
+          case 'ice-candidate': {
 
+            /*
             if (parsedMsg.payload &&
               parsedMsg.whoami &&
               parsedMsg.channel) {
@@ -740,7 +766,17 @@
                 addIceCandidateForUserInChannel(parsedMsg.channel, parsedMsg.whoami, parsedMsg.payload);
               }
             }
-          break;
+            */
+            break;
+          }
+
+          default: {
+
+            throw {
+              'cause': 'Message arrived un-manageable',
+              'target': payload
+            };
+          }
         }
       } else {
 

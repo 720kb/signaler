@@ -1,5 +1,5 @@
-/*global window Comunicator*/
-(function plainOldJs(window, Comunicator) {
+/*global window*/
+(function plainOldJs(window) {
   'use strict';
 
   var Singnaler = function Singnaler(domEvents, url, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt, getUserMediaConst) {
@@ -48,7 +48,10 @@
         }
       , onDataChannelError = function onDataChannelError(error) {
 
-        throw error;
+        throw {
+          'cause': error,
+          'target': this
+        };
       }
       , onDataChannelMessage = function onDataChannelMessage(event) {
 
@@ -63,7 +66,10 @@
           window.dispatchEvent(domEventToDispatch);
         } else {
 
-          throw 'Data channel event not valid';
+          throw {
+            'cause': 'Data channel event not valid',
+            'target': this
+          };
         }
       }
       , onDataChannelOpen = function onDataChannelOpen() {
@@ -85,28 +91,46 @@
           event.channel.onclose = onDataChannelClose;
         } else {
 
-          throw 'Event or event chanel not present';
+          throw {
+            'cause': 'Event or event chanel not present',
+            'target': this
+          };
         }
       }
       , errorOnGetUserMedia = function errorOnGetUserMedia(error) {
 
-        throw error;
+        throw {
+          'cause': error,
+          'target': this
+        };
       }
       , errorOnCreateOffer = function errorOnCreateOffer(error) {
 
-        throw error;
+        throw {
+          'cause': error,
+          'target': this
+        };
       }
       , errorOnCreateAnswer = function errorOnCreateAnswer(error) {
 
-        throw error;
+        throw {
+          'cause': error,
+          'target': this
+        };
       }
       , errorOnSetLocalDescription = function errorOnSetLocalDescription(error) {
 
-        throw error;
+        throw {
+          'cause': error,
+          'target': this
+        };
       }
       , errorOnSetRemoteDescription = function errorOnSetRemoteDescription(error) {
 
-        throw error;
+        throw {
+          'cause': error,
+          'target': this
+        };
       }
       , manageOnAddIceCandidateSuccess = function manageOnAddIceCandidateSuccess() {
 
@@ -114,7 +138,10 @@
       }
       , manageOnAddIceCandidateError = function manageOnAddIceCandidateError(error) {
 
-        throw error;
+        throw {
+          'cause': error,
+          'target': this
+        };
       }
       , manageOnAddStream = function manageOnAddStream(channel, event) {
 
@@ -145,7 +172,10 @@
           }
         } else {
 
-          throw 'No stream arrived';
+          throw {
+            'cause': 'No stream arrived',
+            'target': this
+          };
         }
       }
       , manageOnRemoveStream = function manageOnRemoveStream(channel, event) {
@@ -175,7 +205,10 @@
           }
         } else {
 
-          throw 'No stream arrived';
+          throw {
+            'cause': 'No stream arrived',
+            'target': this
+          };
         }
       }
       , manageOnIceConnectionStateChange = function manageOnIceConnectionStateChange(channel, event) {
@@ -292,7 +325,10 @@
           this.createOffer(onManageOfferWithComunicatorAndChannelAndWho, errorOnCreateOffer);
         } else {
 
-          throw 'No personal stream bounded';
+          throw {
+            'cause': 'No personal stream bounded',
+            'target': this
+          };
         }
       }
       , manageLocalStream = function manageLocalStream(channel, who, localStream) {
@@ -552,7 +588,10 @@
           window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannel, errorOnGetUserMedia);
         } else {
 
-          throw 'Please provide channel name and user must be notified as present in comunicator';
+          throw {
+            'cause': 'Please provide channel name and user must be notified as present in comunicator',
+            'target': this
+          };
         }
       }
       , joinChannel = function joinChannel(theComunicator, channel) {
@@ -566,7 +605,10 @@
           });
         } else {
 
-          throw 'Please provide channel name and user identification';
+          throw {
+            'cause': 'Please provide channel name',
+            'target': this
+          };
         }
       }
       , streamOnChannel = function streamOnChannel(theComunicator, channel) {
@@ -578,7 +620,10 @@
           window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannelAndOwner, errorOnGetUserMedia);
         } else {
 
-          throw 'Please provide channel name and user must be notified as present in comunicator';
+          throw {
+            'cause': 'Please provide channel name and user must be notified as present in comunicator',
+            'target': this
+          };
         }
       }
       , approve = function approve(theComunicator, channel, whoToApprove) {
@@ -594,7 +639,10 @@
           });
         } else {
 
-          throw 'Please review your code';
+          throw {
+            'cause': 'Please review your code',
+            'target': this
+          };
         }
       }
       , unApprove = function unApprove(theComunicator, channel, whoToUnApprove) {
@@ -608,7 +656,10 @@
           });
         } else {
 
-          throw 'Please review your code';
+          throw {
+            'cause': 'Please review your code',
+            'target': this
+          };
         }
       }
       , leaveChannel = function leaveChannel(theComunicator, channel) {
@@ -657,7 +708,10 @@
           window.removeEventListener('comunicator:to-me', arrivedToMe, false);
         } else {
 
-          throw 'Please provide channel name';
+          throw {
+            'cause': 'Please provide channel name',
+            'target': this
+          };
         }
       }
       , getDataChannels = function getDataChannels() {
@@ -726,13 +780,15 @@
       };
 
     if (url &&
-      domEvents) {
+      domEvents &&
+      window.Comunicator) {
 
-      comunicator = new Comunicator(url, true);
+      comunicator = new window.Comunicator(url, true);
     } else {
 
       throw {
-        'cause': 'Missing mandatory <url> and <url> parameters'
+        'cause': 'Missing mandatory <url>, <url> parameters or comunicator not present.',
+        'target': this
       };
     }
 
@@ -766,4 +822,4 @@
   };
 
   window.Singnaler = Singnaler;
-}(window, Comunicator));
+}(window));
