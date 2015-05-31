@@ -579,20 +579,20 @@
             firstWaiter.length > 0) {
 
             comunicator.sendTo(whoami, firstWaiter, {
-              'scope': 'offer',
+              'type': 'offer',
               'channel': channel,
-              'data': offer
+              'offer': offer
             });
             removeInitiatorWaiterForChannel(channel, firstWaiter);
           }
 
-          if (waiters.length > 1) {
+          if (waiters.length >= 1) {
 
             for (waitersIndex = 1; waitersIndex < waiters.length; waitersIndex += 1) {
 
               aWaiter = waiters[waitersIndex];
               comunicator.sendTo(whoami, aWaiter, {
-                'scope': 'redo-join',
+                'type': 'redo-join',
                 'channel': channel
               });
               removeInitiatorWaiterForChannel(channel, aWaiter);
@@ -615,14 +615,14 @@
           who = Object.keys(offer)[0];
           offerToSend = offer[who];
           comunicator.sendTo(whoami, who, {
-            'scope': 'offer',
+            'type': 'offer',
             'channel': channel,
             'data': offer
           });
         } else if (initiator) {
 
           comunicator.sendTo(whoami, initiator, {
-            'scope': 'p2p-inst',
+            'type': 'p2p-inst',
             'channel': channel
           });
         } else {
@@ -633,9 +633,9 @@
       , sendAnswerTo = function sendAnswerTo(channel, who, whoami, answer) {
 
         comunicator.sendTo(whoami, who, {
-          'scope': 'answer',
+          'type': 'answer',
           'channel': channel,
-          'data': answer
+          'answer': answer
         });
       }
       , sendCandidatesTo = function sendCandidatesTo(who, whoami, channel) {
@@ -646,16 +646,16 @@
           iceCandidates.length > 0) {
 
           comunicator.sendTo(whoami, who, {
-            'scope': 'candidate',
+            'type': 'candidate',
             'channel': channel,
-            'data': iceCandidates
+            'candidate': iceCandidates
           });
         }
       }
       , sendP2PIsInst = function sendP2PIsInst(channel, who, whoami) {
 
         comunicator.sendTo(whoami, who, {
-          'scope': 'p2p-is-instantiated',
+          'type': 'p2p-is-instantiated',
           'channel': channel
         });
       }
@@ -680,7 +680,7 @@
               usersInChannel.splice(approvedUserInChannel, 1);
               addApprovedUserForChannel(channel, who);
               comunicator.sendTo(whoami, who, {
-                'scope': 'approved',
+                'type': 'approved',
                 'channel': channel,
                 'data': usersInChannel
               });
@@ -697,7 +697,7 @@
 
           removeApprovedUserForChannel(channel, who);
           comunicator.sendTo(whoami, who, {
-            'scope': 'un-approved',
+            'type': 'un-approved',
             'channel': channel
           });
         }
@@ -711,24 +711,91 @@
         payload.whoami &&
         payload.who &&
         payload.what &&
-        payload.what.scope) {
+        payload.what.type) {
 
         var messageBody = payload.what;
 
-        switch (messageBody.scope) {
+        switch (messageBody.type) {
           case 'open': {
 
-            /*
-            if (parsedMsg.payload) {
+            setInitiatorForChannel(messageBody.channel, payload.whoami);
+            addOfferForChannel(messageBody.offer, payload.whoami, messageBody.channel);
+            if (payload.who) {
 
-              setInitiatorForChannel(messageBody.channel, payload.whoami);
-              addOfferForChannel(messageBody.offer, parsedMsg.whoami, messageBody.channel);
-              if (parsedMsg.who) {
+              sendP2PIsInst(messageBody.channel, payload.who, payload.whoami);
+            }
+            break;
+          }
 
-                sendP2PIsInst(parsedMsg.channel, parsedMsg.who, parsedMsg.whoami);
+          case 'answer': {
+
+            sendAnswerTo(messageBody.channel, payload.who, payload.whoami, messageBody.answer);
+            break;
+          }
+
+          case 'ice-candidate': {
+
+            if (messageBody.candidate &&
+              payload.whoami &&
+              messageBody.channel) {
+
+              if (directIceCandidates[messageBody.channel] &&
+                directIceCandidates[messageBody.channel][payload.who] &&
+                directIceCandidates[messageBody.channel][payload.who][payload.whoami]) {
+
+                comunicator.sendTo(payload.whoami, payload.who, {
+                  'type': 'candidate',
+                  'channel': messageBody.channel,
+                  'candidate': messageBody.candidate
+                });
+              } else {
+
+                addIceCandidateForUserInChannel(parsedMsg.channel, parsedMsg.whoami, parsedMsg.payload);
               }
             }
-            */
+            break;
+          }
+
+          case 'use-ice-candidates': {
+
+            sendCandidatesTo(payload.who, payload.whoami, messageBody.channel);
+            var initiatorAndApprovedUsersForChannel = getInitiatorAndApprovedUsersForChannel(messageBody.channel)
+              , approvedUsersIndex = 0
+              , approvedUsersLength
+              , anApprovedUser;
+            if (initiatorAndApprovedUsersForChannel) {
+
+              if (initiatorAndApprovedUsersForChannel.initiator === payload.whoami &&
+                initiatorAndApprovedUsersForChannel.approvedUsers) {
+
+                var approvedUsersLength = initiatorAndApprovedUsersForChannel.approvedUsers.length;
+                for (; approvedUsersIndex < approvedUsersLength; approvedUsersIndex += 1) {
+
+                  anApprovedUser = initiatorAndApprovedUsersForChannel.approvedUsers[approvedUsersIndex];
+                  if (anApprovedUser &&
+                    anApprovedUser !== parsedMsg.who) {
+
+                    console.info('Sending approved to', anApprovedUser);
+                    //sockets[messageBody.channel][anApprovedUser].send('approved', messageBody.channel, payload.who, payload.whoami, [payload.who]);
+                  }
+                }
+              }
+            } else {
+
+              console.error('Initiator or approved users are undefined');
+            }
+
+            if (!directIceCandidates[messageBody.channel]) {
+
+              directIceCandidates[messageBody.channel] = {};
+            }
+
+            if (!directIceCandidates[messageBody.channel][payload.whoami]) {
+
+              directIceCandidates[messageBody.channel][payload.whoami] = {};
+            }
+
+            directIceCandidates[messageBody.channel][payload.whoami][payload.who] = true;
             break;
           }
 
@@ -737,35 +804,6 @@
             /*
             addListenerForChannel(parsedMsg.channel, parsedMsg.whoami);
             sendOffersTo(aWebSocket, parsedMsg.whoami, parsedMsg.channel);
-            */
-            break;
-          }
-
-          case 'answer': {
-
-            /*
-            sendAnswerTo(parsedMsg.channel, parsedMsg.who, parsedMsg.whoami, parsedMsg.payload);
-            */
-            break;
-          }
-
-          case 'ice-candidate': {
-
-            /*
-            if (parsedMsg.payload &&
-              parsedMsg.whoami &&
-              parsedMsg.channel) {
-
-              if (directIceCandidates[parsedMsg.channel] &&
-                directIceCandidates[parsedMsg.channel][parsedMsg.who] &&
-                directIceCandidates[parsedMsg.channel][parsedMsg.who][parsedMsg.whoami]) {
-
-                sockets[parsedMsg.channel][parsedMsg.who].send('candidate', parsedMsg.channel, parsedMsg.who, parsedMsg.whoami, [parsedMsg.payload]);
-              } else {
-
-                addIceCandidateForUserInChannel(parsedMsg.channel, parsedMsg.whoami, parsedMsg.payload);
-              }
-            }
             */
             break;
           }
@@ -829,42 +867,6 @@
             addWebSocketForChannel(aWebSocket, parsedMsg.whoami, parsedMsg.channel);
             //jwt.verify(parsedMsg.token, config.sessionSecretKey, function () {
             switch (parsedMsg.opcode) {
-
-              case 'useIceCandidates':
-
-                sendCandidatesTo(parsedMsg.who, parsedMsg.whoami, parsedMsg.channel);
-                getInitiatorAndApprovedUsersForChannel(parsedMsg.channel).then(function onSuccess(response) {
-
-                  if (response.initiator === parsedMsg.whoami) {
-
-                    if (response.approvedUsers) {
-                      var approvedUsersIndex = 0
-                        , approvedUsersLength = response.approvedUsers.length
-                        , anApprovedUser;
-                      for (; approvedUsersIndex < approvedUsersLength; approvedUsersIndex += 1) {
-
-                        anApprovedUser = response.approvedUsers[approvedUsersIndex];
-                        if (anApprovedUser &&
-                          anApprovedUser !== parsedMsg.who) {
-
-                          sockets[parsedMsg.channel][anApprovedUser].send('approved', parsedMsg.channel, parsedMsg.who, parsedMsg.whoami, [parsedMsg.who]);
-                        }
-                      }
-                    }
-                  }
-                });
-                if (!directIceCandidates[parsedMsg.channel]) {
-
-                  directIceCandidates[parsedMsg.channel] = {};
-                }
-
-                if (!directIceCandidates[parsedMsg.channel][parsedMsg.whoami]) {
-
-                  directIceCandidates[parsedMsg.channel][parsedMsg.whoami] = {};
-                }
-
-                directIceCandidates[parsedMsg.channel][parsedMsg.whoami][parsedMsg.who] = true;
-              break;
 
               case 'approve':
 

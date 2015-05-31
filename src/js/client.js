@@ -2,7 +2,7 @@
 (function plainOldJs(window) {
   'use strict';
 
-  var Singnaler = function Singnaler(domEvents, url, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt, getUserMediaConst) {
+  var Signaler = function Signaler(domEvents, url, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt, getUserMediaConst) {
 
     var myTmpPeerConnection
       , myTmpDataChannel
@@ -246,7 +246,6 @@
       }
       , notifySettingRemoteDescription = function notifySettingRemoteDescription(theComunicator, who, channel) {
 
-        window.console.debug('Remote description set');
         theComunicator.sendTo(who, {
           'type': 'use-ice-candidates',
           'channel': channel
@@ -400,85 +399,78 @@
           myTmpDataChannel = aDataCannel;
         }
       }
-      , arrivedToMe = function arrivedToMe(event) {
+      , arrivedToMe = function arrivedToMe(theComunicator, event) {
 
         /*{ 'opcode': 'sent', 'whoami': whoami, 'who': who, 'what': what }*/
         if (event &&
           event.detail &&
-          event.detail.type) {
+          event.detail.what.type) {
 
           var eventArrived = event.detail;
-
           switch (eventArrived.what.type) {
+
             case 'offer': {
 
-              /*
-              if (parsedMsg.payload) {
+              if (eventArrived.what.offer) {
 
-                if (!channelInitiator[parsedMsg.channel]) {
+                if (!channelInitiator[eventArrived.what.channel]) {
 
-                  channelInitiator[parsedMsg.channel] = parsedMsg.whoami;
+                  channelInitiator[eventArrived.what.channel] = eventArrived.whoami;
                 }
-
                 if (myTmpPeerConnection) {
 
-                  peerConnections[parsedMsg.channel][parsedMsg.whoami] = myTmpPeerConnection;
-                  dataChannels[parsedMsg.channel][parsedMsg.whoami] = myTmpDataChannel;
+                  peerConnections[eventArrived.what.channel][eventArrived.whoami] = myTmpPeerConnection;
+                  dataChannels[eventArrived.what.channel][eventArrived.whoami] = myTmpDataChannel;
                   myTmpPeerConnection = undefined;
                   myTmpDataChannel = undefined;
                 }
 
-                peerConnections[parsedMsg.channel][parsedMsg.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.channel, parsedMsg.whoami, whoami);
-                manageCreateAnswer.call(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.channel, whoami, parsedMsg.whoami, parsedMsg.payload);
+                peerConnections[eventArrived.what.channel][eventArrived.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
+                manageCreateAnswer.call(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, parsedMsg.whoami, eventArrived.what.offer);
               } else {
 
                 throw 'No payload';
               }
-              */
               break;
             }
 
             case 'answer': {
 
-              /*
-              if (parsedMsg.payload &&
-                parsedMsg.whoami) {
+              if (eventArrived.what.answer &&
+                eventArrived.whoami) {
 
                 if (myTmpPeerConnection) {
 
-                  peerConnections[parsedMsg.channel][parsedMsg.whoami] = myTmpPeerConnection;
-                  dataChannels[parsedMsg.channel][parsedMsg.whoami] = myTmpDataChannel;
+                  peerConnections[eventArrived.what.channel][eventArrived.whoami] = myTmpPeerConnection;
+                  dataChannels[eventArrived.what.channel][eventArrived.whoami] = myTmpDataChannel;
                   myTmpPeerConnection = undefined;
                   myTmpDataChannel = undefined;
                 }
 
-                peerConnections[parsedMsg.channel][parsedMsg.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.channel, parsedMsg.whoami, whoami);
-                manageSetRemoteDescription.call(peerConnections[parsedMsg.channel][parsedMsg.whoami], parsedMsg.payload, whoami, parsedMsg.whoami, channel);
+                peerConnections[eventArrived.what.channel][eventArrived.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
+                manageSetRemoteDescription.call(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.answer, eventArrived.whoami, eventArrived.what.channel);
               } else {
 
                 throw 'No payload or user identification';
               }
-              */
               break;
             }
 
             case 'candidate': {
 
-              /*
-              if (parsedMsg.payload &&
-                parsedMsg.payload.length > 0) {
+              if (eventArrived.what.candidate &&
+                eventArrived.what.candidate.length > 0) {
 
-                candidatesLength = parsedMsg.payload.length;
+                candidatesLength = eventArrived.what.candidate.length;
                 for (i = 0; i < candidatesLength; i += 1) {
 
-                  aCandidate = parsedMsg.payload[i];
-                  peerConnections[channel][parsedMsg.whoami].addIceCandidate(
+                  aCandidate = eventArrived.what.candidate[i];
+                  peerConnections[eventArrived.what.channel][eventArrived.whoami].addIceCandidate(
                     new window.RTCIceCandidate(aCandidate),
                     manageOnAddIceCandidateSuccess,
                     manageOnAddIceCandidateError);
                 }
               }
-              */
               break;
             }
 
@@ -581,7 +573,7 @@
           comunicator &&
           comunicator.whoReallyAmI) {
 
-          var manageLocalStreamWithChannel = manageLocalStream.bind(null, channel, undefined);
+          var manageLocalStreamWithChannel = manageLocalStream.bind(this, channel, undefined);
 
           channelInitiator[channel] = comunicator.whoReallyAmI;
           initRTCPeerConnection(theComunicator, channel);
@@ -764,7 +756,9 @@
       }
       , onComunicatorResolved = function onComunicatorResolved(resolve, theComunicator) {
 
+        window.addEventListener('comunicator:to-me', arrivedToMe.bind(this, theComunicator), false);
         resolve({
+          'userIsPresent': theComunicator.userIsPresent,
           'createChannel': createChannel.bind(this, theComunicator),
           'joinChannel': joinChannel.bind(this, theComunicator),
           'streamOnChannel': streamOnChannel.bind(this, theComunicator),
@@ -816,10 +810,8 @@
 
       getUserMediaConstraints = getUserMediaConst;
     }
-
-    window.addEventListener('comunicator:to-me', arrivedToMe, false);
     return new Promise(deferred.bind(this));
   };
 
-  window.Singnaler = Singnaler;
+  window.Signaler = Signaler;
 }(window));
