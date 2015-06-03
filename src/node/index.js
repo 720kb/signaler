@@ -415,13 +415,16 @@
     }
     , leave = function leave(whoami) {
 
-      var initiatorsKeys = Object.keys(initiators)
-        , initiatorsKeysLength = initiatorsKeys.length
-        , initiatorsKeysIndex = 0
-        , anInitiatorChannel
+      var channels = Object.keys(initiators)
+        , channelsLength = channels.length
+        , channelsIndex = 0
+        , aChannel
         , channelInitiator
-        , channelInitiatorWaiters
+        , channelWaiters
         , approvedUsersInChannel
+        , actualListenersInChannel
+        , actualListenerIndex = 0;/*
+        , channelInitiatorWaiters
         , listenersKeys = Object.keys(listeners)
         , listenersKeysIndex = 0
         , listenersKeysLength = listenersKeys.length
@@ -446,34 +449,41 @@
         , iceCandidatesKeysLength = iceCandidatesKeys.length
         , anIceCandidatesChannel
         , anIceCandidatesChannelKeys
-        , anIceCandidatesChannelKeysIndex = 0;
+        , anIceCandidatesChannelKeysIndex = 0;*/
 
-      for (; initiatorsKeysIndex < initiatorsKeysLength; initiatorsKeysIndex += 1) {
+      for (; channelsIndex < channelsLength; channelsIndex += 1) {
 
-        anInitiatorChannel = initiatorsKeys[initiatorsKeysIndex];
-        if (anInitiatorChannel &&
-          anInitiatorChannel === whoami) {
+        aChannel = channels[channelsIndex];
+        if (aChannel) {
 
-          delete initiators[anInitiatorChannel];
-          channelInitiator = getInitiatorForChannel(initiatorsKeysIndex);
-          channelInitiatorWaiters = getInitiatorWaitersForChannel(initiatorsKeysIndex);
-          approvedUsersInChannel = getApprovedUsersForChannel(initiatorsKeysIndex);
-          if (channelInitiator) {
+          channelInitiator = getInitiatorForChannel(aChannel);
+          channelWaiters = getInitiatorWaitersForChannel(aChannel);
+          approvedUsersInChannel = getApprovedUsersForChannel(aChannel);
+          actualListenersInChannel = getListenersForChannel(aChannel);
+          if (channelInitiator === whoami) {
 
-            manageInitiator(initiatorsKeysIndex, aChannelUser, channelInitiator);
-          } else {
-
-            removeListenerForChannel(this, initiatorsKeysIndex, aChannelUser);
+            delete initiators[aChannel];
           }
+
+          for (actualListenerIndex = 0; actualListenerIndex < actualListenersInChannel.length; actualListenersInChannel += 1) {
+
+            anActualListener = actualListenersInChannel[actualListenerIndex];
+            if (anActualListener) {
+
+              manageInitiator(aChannel, anActualListener, channelInitiator);
+            }
+          }
+
+          //TODO continue...
 
           if (channelInitiatorWaiters) {
 
-            manageInitiatorWaiter(initiatorsKeysIndex, aChannelUser, channelInitiatorWaiters);
+            manageInitiatorWaiter(channelsIndex, aChannelUser, channelInitiatorWaiters);
           }
 
           if (approvedUsersInChannel) {
 
-            manageApprovedUser(initiatorsKeysIndex, aChannelUser, approvedUsersInChannel);
+            manageApprovedUser(channelsIndex, aChannelUser, approvedUsersInChannel);
           }
         }
       }

@@ -406,7 +406,10 @@
           event.detail &&
           event.detail.what.type) {
 
-          var eventArrived = event.detail;
+          var eventArrived = event.detail
+            , candidatesLength
+            , candidateIndex = 0
+            , aCandidate;
           switch (eventArrived.what.type) {
 
             case 'offer': {
@@ -426,7 +429,11 @@
                 }
 
                 peerConnections[eventArrived.what.channel][eventArrived.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
-                manageCreateAnswer.call(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, parsedMsg.whoami, eventArrived.what.offer);
+                manageCreateAnswer.call(peerConnections[eventArrived.what.channel][eventArrived.whoami],
+                  theComunicator,
+                  eventArrived.what.channel,
+                  eventArrived.whoami,
+                  eventArrived.what.offer);
               } else {
 
                 throw 'No payload';
@@ -448,7 +455,11 @@
                 }
 
                 peerConnections[eventArrived.what.channel][eventArrived.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
-                manageSetRemoteDescription.call(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.answer, eventArrived.whoami, eventArrived.what.channel);
+                manageSetRemoteDescription.call(peerConnections[eventArrived.what.channel][eventArrived.whoami],
+                  theComunicator,
+                  eventArrived.what.answer,
+                  eventArrived.whoami,
+                  eventArrived.what.channel);
               } else {
 
                 throw 'No payload or user identification';
@@ -462,9 +473,9 @@
                 eventArrived.what.candidate.length > 0) {
 
                 candidatesLength = eventArrived.what.candidate.length;
-                for (i = 0; i < candidatesLength; i += 1) {
+                for (candidateIndex = 0; candidateIndex < candidatesLength; candidateIndex += 1) {
 
-                  aCandidate = eventArrived.what.candidate[i];
+                  aCandidate = eventArrived.what.candidate[candidateIndex];
                   peerConnections[eventArrived.what.channel][eventArrived.whoami].addIceCandidate(
                     new window.RTCIceCandidate(aCandidate),
                     manageOnAddIceCandidateSuccess,
