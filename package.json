@@ -24,8 +24,8 @@
     "comunicator": "^2.0.0"
   },
   "devDependencies": {
-    "eslint": "^0.19.0",
-    "jscs": "^1.13.1",
-    "uglifyjs": "^2.4.10"
+    "eslint": "*",
+    "jscs": "*",
+    "uglifyjs": "*"
   }
 }

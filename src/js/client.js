@@ -410,6 +410,7 @@
             , candidatesLength
             , candidateIndex = 0
             , aCandidate;
+
           switch (eventArrived.what.type) {
 
             case 'offer': {
