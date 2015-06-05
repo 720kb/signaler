@@ -4,7 +4,7 @@
   <title>Signaler Test</title>
   <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/materialize/0.96.1/css/materialize.min.css">
 </head>
-<body class="grey lighten-3" ng-app="720kb.test">
+<body class="grey lighten-3">
   <nav class="white">
     <div class="nav-wrapper black-text">
       <a href="#" class="brand-logo black-text">
@@ -13,12 +13,12 @@
       </a>
     </div>
   </nav>
-  <div class="container" ng-controller="TestController">
+  <div class="container">
     <p>
       <div class="row blank-text">
-        <input type="text" ng-model="token" placeholder="Whoami"/>
-        <input type="text" ng-model="roomID" placeholder="RoomID"/>
-        <input type="text" ng-model="userID" placeholder="User ID"/>
+        <input type="text" placeholder="Whoami"/>
+        <input type="text" placeholder="RoomID"/>
+        <input type="text" placeholder="User ID"/>
       </div>
     </p>
     <div class="row center-align">
@@ -38,9 +38,9 @@
         </button>
       </div>
     </div>
-    <div ng-show="message" class="card white">
+    <div class="card white">
       <div class="card-content">
-        <h6 class="center-align" ng-show="message">
+        <h6 class="center-align">
           Message
         </h6>
         <p class="col m12 center-align blue-text">Some message !?</p>
