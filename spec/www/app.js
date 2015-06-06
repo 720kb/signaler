@@ -8,7 +8,20 @@
     , userIdentifierTextElement = document.getElementById('user-identifier')
     , roomIdentifierTextElement = document.getElementById('room-identifier')
     , domEvent = 'comunicator:ready'
-    , signaler = new window.Signaler([domEvent], 'ws://localhost:9876')
+    , signaler = new window.Signaler([domEvent], 'ws://localhost:9876', {
+        'audio': {
+          'mandatory': {
+            'googEchoCancellation': 'false',
+            'googAutoGainControl': 'false',
+            'googNoiseSuppression': 'false',
+            'googHighpassFilter': 'false'
+          }
+        }
+      }, {
+        'mandatory': {
+          'OfferToReceiveAudio': true
+        }
+      })
     , token
     , userIdentifier
     , kickOffEvent;
@@ -47,9 +60,16 @@
     if (theSignaler) {
 
       theSignaler.userIsPresent(userIdentifier, token);
-      createChannelButtonElement.onclick = function onCreateChannelClick(event) {
+      createChannelButtonElement.onclick = function onCreateChannelClick() {
 
-        window.console.log(event);
+        if (roomIdentifierTextElement &&
+          roomIdentifierTextElement.value) {
+
+          theSignaler.createChannel(roomIdentifierTextElement.value);
+        } else {
+
+          window.console.error('Manadatory channel name missing.');
+        }
       };
 
       joinChannelButtonElement.onclick = function onJoinChannelClick(event) {

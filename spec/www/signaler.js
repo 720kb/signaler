@@ -1,1 +1,1 @@
-../../src/js/client.js
+../../src/js/signaler.js

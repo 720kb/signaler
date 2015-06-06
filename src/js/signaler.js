@@ -2,7 +2,7 @@
 (function plainOldJs(window) {
   'use strict';
 
-  var Signaler = function Signaler(domEvents, url, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt, getUserMediaConst) {
+  var Signaler = function Signaler(domEvents, url, getUserMediaConst, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt) {
 
     var myTmpPeerConnection
       , myTmpDataChannel
@@ -49,8 +49,7 @@
       , onDataChannelError = function onDataChannelError(error) {
 
         throw {
-          'cause': error,
-          'target': this
+          'cause': error
         };
       }
       , onDataChannelMessage = function onDataChannelMessage(event) {
@@ -67,8 +66,7 @@
         } else {
 
           throw {
-            'cause': 'Data channel event not valid',
-            'target': this
+            'cause': 'Data channel event not valid'
           };
         }
       }
@@ -92,44 +90,38 @@
         } else {
 
           throw {
-            'cause': 'Event or event chanel not present',
-            'target': this
+            'cause': 'Event or event channel not present'
           };
         }
       }
       , errorOnGetUserMedia = function errorOnGetUserMedia(error) {
 
         throw {
-          'cause': error,
-          'target': this
+          'cause': error
         };
       }
       , errorOnCreateOffer = function errorOnCreateOffer(error) {
 
         throw {
-          'cause': error,
-          'target': this
+          'cause': error
         };
       }
       , errorOnCreateAnswer = function errorOnCreateAnswer(error) {
 
         throw {
-          'cause': error,
-          'target': this
+          'cause': error
         };
       }
       , errorOnSetLocalDescription = function errorOnSetLocalDescription(error) {
 
         throw {
-          'cause': error,
-          'target': this
+          'cause': error
         };
       }
       , errorOnSetRemoteDescription = function errorOnSetRemoteDescription(error) {
 
         throw {
-          'cause': error,
-          'target': this
+          'cause': error
         };
       }
       , manageOnAddIceCandidateSuccess = function manageOnAddIceCandidateSuccess() {
@@ -139,8 +131,7 @@
       , manageOnAddIceCandidateError = function manageOnAddIceCandidateError(error) {
 
         throw {
-          'cause': error,
-          'target': this
+          'cause': error
         };
       }
       , manageOnAddStream = function manageOnAddStream(channel, event) {
@@ -173,8 +164,7 @@
         } else {
 
           throw {
-            'cause': 'No stream arrived',
-            'target': this
+            'cause': 'No stream arrived'
           };
         }
       }
@@ -206,8 +196,7 @@
         } else {
 
           throw {
-            'cause': 'No stream arrived',
-            'target': this
+            'cause': 'No stream arrived'
           };
         }
       }
@@ -325,8 +314,7 @@
         } else {
 
           throw {
-            'cause': 'No personal stream bounded',
-            'target': this
+            'cause': 'No personal stream bounded'
           };
         }
       }
@@ -593,8 +581,7 @@
         } else {
 
           throw {
-            'cause': 'Please provide channel name and user must be notified as present in comunicator',
-            'target': this
+            'cause': 'Please provide channel name and user must be notified as present in comunicator'
           };
         }
       }
@@ -610,8 +597,7 @@
         } else {
 
           throw {
-            'cause': 'Please provide channel name',
-            'target': this
+            'cause': 'Please provide channel name'
           };
         }
       }
@@ -625,8 +611,7 @@
         } else {
 
           throw {
-            'cause': 'Please provide channel name and user must be notified as present in comunicator',
-            'target': this
+            'cause': 'Please provide channel name and user must be notified as present in comunicator'
           };
         }
       }
@@ -644,8 +629,7 @@
         } else {
 
           throw {
-            'cause': 'Please review your code',
-            'target': this
+            'cause': 'Please review your code'
           };
         }
       }
@@ -661,8 +645,7 @@
         } else {
 
           throw {
-            'cause': 'Please review your code',
-            'target': this
+            'cause': 'Please review your code'
           };
         }
       }
@@ -713,8 +696,7 @@
         } else {
 
           throw {
-            'cause': 'Please provide channel name',
-            'target': this
+            'cause': 'Please provide channel name'
           };
         }
       }
@@ -793,9 +775,13 @@
     } else {
 
       throw {
-        'cause': 'Missing mandatory <url>, <url> parameters or comunicator not present.',
-        'target': this
+        'cause': 'Missing mandatory <url> parameters or comunicator not present.'
       };
+    }
+
+    if (getUserMediaConst) {
+
+      getUserMediaConstraints = getUserMediaConst;
     }
 
     if (sdpConst) {
@@ -816,11 +802,6 @@
     if (rtcDataChannelOpt) {
 
       rtcDataChannelOptions = rtcDataChannelOpt;
-    }
-
-    if (getUserMediaConst) {
-
-      getUserMediaConstraints = getUserMediaConst;
     }
     return new Promise(deferred.bind(this));
   };

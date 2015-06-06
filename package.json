@@ -22,7 +22,8 @@
   },
   "homepage": "https://github.com/wouldgo/signaler",
   "dependencies": {
-    "comunicator": "^2.0.0"
+    "comunicator": "^2.0.0",
+    "webrtc-adapter-test": "*"
   },
   "devDependencies": {
     "eslint": "*",
