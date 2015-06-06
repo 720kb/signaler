@@ -4,20 +4,63 @@
 
   var createChannelButtonElement = document.getElementById('create-channel')
     , joinChannelButtonElement = document.getElementById('join-channel')
-    , leaveChannelButtonElement = document.getElementById('leave-channel');
+    , leaveChannelButtonElement = document.getElementById('leave-channel')
+    , userIdentifierTextElement = document.getElementById('user-identifier')
+    , roomIdentifierTextElement = document.getElementById('room-identifier')
+    , domEvent = 'comunicator:ready'
+    , signaler = new window.Signaler([domEvent], 'ws://localhost:9876')
+    , token
+    , userIdentifier
+    , kickOffEvent;
 
-  createChannelButtonElement.onclick = function onCreateChannelClick(event) {
+  window.fetch('/token').then(function onSuccess(data) {
 
-    window.console.log(event);
-  };
+    if (data &&
+      data.ok) {
 
-  joinChannelButtonElement.onclick = function onJoinChannelClick(event) {
+      return data.json();
+    }
+    return {};
+  }, function onFailure(failure) {
 
-    window.console.log(event);
-  };
+    window.console.error(failure);
+  }).then(function onJsonResponse(jsonResponse) {
 
-  leaveChannelButtonElement.onclick = function onLeaveChannelClick(event) {
+    if (jsonResponse &&
+      jsonResponse.token &&
+      jsonResponse.userID) {
 
-    window.console.log(event);
-  };
+      token = jsonResponse.token;
+      userIdentifier = jsonResponse.userID;
+      userIdentifierTextElement.value = userIdentifier;
+      kickOffEvent = new window.Event(domEvent);
+
+      window.dispatchEvent(kickOffEvent);
+    }
+  }, function onFailure(failure) {
+
+    window.console.log(failure);
+  });
+
+  signaler.then(function onSignalerReady(theSignaler) {
+
+    if (theSignaler) {
+
+      theSignaler.userIsPresent(userIdentifier, token);
+      createChannelButtonElement.onclick = function onCreateChannelClick(event) {
+
+        window.console.log(event);
+      };
+
+      joinChannelButtonElement.onclick = function onJoinChannelClick(event) {
+
+        window.console.log(event);
+      };
+
+      leaveChannelButtonElement.onclick = function onLeaveChannelClick(event) {
+
+        window.console.log(event);
+      };
+    }
+  });
 }(window, document));
