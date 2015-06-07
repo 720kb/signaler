@@ -72,14 +72,29 @@
         }
       };
 
-      joinChannelButtonElement.onclick = function onJoinChannelClick(event) {
+      joinChannelButtonElement.onclick = function onJoinChannelClick() {
 
-        window.console.log(event);
+        if (roomIdentifierTextElement &&
+          roomIdentifierTextElement.value) {
+
+          theSignaler.joinChannel(roomIdentifierTextElement.value);
+        } else {
+
+          window.console.error('Manadatory channel name missing.');
+        }
       };
 
-      leaveChannelButtonElement.onclick = function onLeaveChannelClick(event) {
+      leaveChannelButtonElement.onclick = function onLeaveChannelClick() {
 
-        window.console.log(event);
+        if (roomIdentifierTextElement &&
+          roomIdentifierTextElement.value) {
+
+          theSignaler.leaveChannel(roomIdentifierTextElement.value);
+          roomIdentifierTextElement.value = '';
+        } else {
+
+          window.console.error('Manadatory channel name missing.');
+        }
       };
     }
   });

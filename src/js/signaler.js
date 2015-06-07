@@ -4,7 +4,8 @@
 
   var Signaler = function Signaler(domEvents, url, getUserMediaConst, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt) {
 
-    var myTmpPeerConnection
+    var unknownPeerValue = 'unknown-peer'
+      , myTmpPeerConnection
       , myTmpDataChannel
       , channelInitiator = {}
       , peerConnections = {}
@@ -48,9 +49,7 @@
         }
       , onDataChannelError = function onDataChannelError(error) {
 
-        throw {
-          'cause': error
-        };
+        window.console.warn('cause', error);
       }
       , onDataChannelMessage = function onDataChannelMessage(event) {
 
@@ -65,9 +64,7 @@
           window.dispatchEvent(domEventToDispatch);
         } else {
 
-          throw {
-            'cause': 'Data channel event not valid'
-          };
+          window.console.warn('cause', 'Data channel event not valid');
         }
       }
       , onDataChannelOpen = function onDataChannelOpen() {
@@ -89,40 +86,28 @@
           event.channel.onclose = onDataChannelClose;
         } else {
 
-          throw {
-            'cause': 'Event or event channel not present'
-          };
+          window.console.warn('cause', 'Event or event channel not present');
         }
       }
       , errorOnGetUserMedia = function errorOnGetUserMedia(error) {
 
-        throw {
-          'cause': error
-        };
+        window.console.warn('cause', error);
       }
       , errorOnCreateOffer = function errorOnCreateOffer(error) {
 
-        throw {
-          'cause': error
-        };
+        window.console.warn('cause', error);
       }
       , errorOnCreateAnswer = function errorOnCreateAnswer(error) {
 
-        throw {
-          'cause': error
-        };
+        window.console.warn('cause', error);
       }
       , errorOnSetLocalDescription = function errorOnSetLocalDescription(error) {
 
-        throw {
-          'cause': error
-        };
+        window.console.warn('cause', error);
       }
       , errorOnSetRemoteDescription = function errorOnSetRemoteDescription(error) {
 
-        throw {
-          'cause': error
-        };
+        window.console.warn('cause', error);
       }
       , manageOnAddIceCandidateSuccess = function manageOnAddIceCandidateSuccess() {
 
@@ -130,9 +115,7 @@
       }
       , manageOnAddIceCandidateError = function manageOnAddIceCandidateError(error) {
 
-        throw {
-          'cause': error
-        };
+        window.console.warn('cause', error);
       }
       , manageOnAddStream = function manageOnAddStream(channel, event) {
 
@@ -163,9 +146,7 @@
           }
         } else {
 
-          throw {
-            'cause': 'No stream arrived'
-          };
+          window.console.warn('cause', 'No stream arrived');
         }
       }
       , manageOnRemoveStream = function manageOnRemoveStream(channel, event) {
@@ -195,9 +176,7 @@
           }
         } else {
 
-          throw {
-            'cause': 'No stream arrived'
-          };
+          window.console.warn('cause', 'No stream arrived');
         }
       }
       , manageOnIceConnectionStateChange = function manageOnIceConnectionStateChange(channel, event) {
@@ -313,9 +292,7 @@
           this.createOffer(onManageOfferWithComunicatorAndChannelAndWho, errorOnCreateOffer);
         } else {
 
-          throw {
-            'cause': 'No personal stream bounded'
-          };
+          window.console.warn('cause', 'No personal stream bounded');
         }
       }
       , manageLocalStream = function manageLocalStream(channel, who, localStream) {
@@ -336,7 +313,7 @@
         //audioContext.createMediaStreamSource(myStream);
         //, contextifiedLocalStream = audioContext.createMediaStreamDestination();
 
-        if (who &&
+        if (who !== unknownPeerValue &&
           peerConnections[channel][who]) {
 
           onManageOnNegotiationNeededWithChannelAndWho = manageOnNegotiationNeeded.bind(peerConnections[channel][who], channel, who);
@@ -377,14 +354,14 @@
           dataChannels[channel] = {};
         }
 
-        if (who) {
-
-          peerConnections[channel][who] = aPeerConnection;
-          dataChannels[channel][who] = aDataCannel;
-        } else {
+        if (who === unknownPeerValue) {
 
           myTmpPeerConnection = aPeerConnection;
           myTmpDataChannel = aDataCannel;
+        } else {
+
+          peerConnections[channel][who] = aPeerConnection;
+          dataChannels[channel][who] = aDataCannel;
         }
       }
       , arrivedToMe = function arrivedToMe(theComunicator, event) {
@@ -425,7 +402,7 @@
                   eventArrived.what.offer);
               } else {
 
-                throw 'No payload';
+                window.console.error('No payload');
               }
               break;
             }
@@ -451,7 +428,7 @@
                   eventArrived.what.channel);
               } else {
 
-                throw 'No payload or user identification';
+                window.console.warn('No payload or user identification');
               }
               break;
             }
@@ -525,7 +502,7 @@
                 }
               } else {
 
-                throw 'No payload';
+              window.console.warn('No payload');
               }
               */
               break;
@@ -552,18 +529,12 @@
 
             default: {
 
-              throw {
-                'cause': 'Event valid but un-manageable',
-                'target': event.detail
-              };
+              window.console.warn('cause', 'Event valid but un-manageable', 'target', event.detail);
             }
           }
         } else {
 
-          throw {
-            'cause': 'Event arrived is somehow invalid',
-            'target': event
-          };
+          window.console.warn('cause', 'Event arrived is somehow invalid', 'target', event);
         }
       }
       /*Core methods*/
@@ -573,46 +544,40 @@
           comunicator &&
           comunicator.whoReallyAmI) {
 
-          var manageLocalStreamWithChannel = manageLocalStream.bind(this, channel, undefined);
+          var manageLocalStreamWithChannel = manageLocalStream.bind(this, channel, unknownPeerValue);
 
           channelInitiator[channel] = comunicator.whoReallyAmI;
-          initRTCPeerConnection(theComunicator, channel);
+          initRTCPeerConnection(theComunicator, channel, unknownPeerValue);
           window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannel, errorOnGetUserMedia);
         } else {
 
-          throw {
-            'cause': 'Please provide channel name and user must be notified as present in comunicator'
-          };
+          window.console.warn('cause', 'Please provide channel name and user must be notified as present in comunicator');
         }
       }
       , joinChannel = function joinChannel(theComunicator, channel) {
 
         if (channel) {
 
-          initRTCPeerConnection(theComunicator, channel);
+          initRTCPeerConnection(theComunicator, channel, unknownPeerValue);
           theComunicator.broadcast({
             'type': 'join-channel',
             'channel': channel
           });
         } else {
 
-          throw {
-            'cause': 'Please provide channel name'
-          };
+          window.console.warn('cause', 'Please provide channel name');
         }
       }
       , streamOnChannel = function streamOnChannel(theComunicator, channel) {
 
         if (channel) {
 
-          var manageLocalStreamWithChannelAndOwner = manageLocalStream.bind(null, channel, channelInitiator[channel]);
+          var manageLocalStreamWithChannelAndOwner = manageLocalStream.bind(this, channel, channelInitiator[channel]);
 
           window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannelAndOwner, errorOnGetUserMedia);
         } else {
 
-          throw {
-            'cause': 'Please provide channel name and user must be notified as present in comunicator'
-          };
+          window.console.warn('cause', 'Please provide channel name and user must be notified as present in comunicator');
         }
       }
       , approve = function approve(theComunicator, channel, whoToApprove) {
@@ -628,9 +593,7 @@
           });
         } else {
 
-          throw {
-            'cause': 'Please review your code'
-          };
+          window.console.warn('cause', 'Please review your code');
         }
       }
       , unApprove = function unApprove(theComunicator, channel, whoToUnApprove) {
@@ -644,9 +607,7 @@
           });
         } else {
 
-          throw {
-            'cause': 'Please review your code'
-          };
+          window.console.warn('cause', 'Please review your code');
         }
       }
       , leaveChannel = function leaveChannel(theComunicator, channel) {
@@ -695,9 +656,7 @@
           window.removeEventListener('comunicator:to-me', arrivedToMe, false);
         } else {
 
-          throw {
-            'cause': 'Please provide channel name'
-          };
+          window.console.warn('cause', 'Please provide channel name');
         }
       }
       , getDataChannels = function getDataChannels() {
@@ -774,9 +733,7 @@
       comunicator = new window.Comunicator(url, true);
     } else {
 
-      throw {
-        'cause': 'Missing mandatory <url> parameters or comunicator not present.'
-      };
+      window.console.warn('cause', 'Missing mandatory <url> parameters or comunicator not present.');
     }
 
     if (getUserMediaConst) {
