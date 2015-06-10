@@ -559,7 +559,7 @@
         if (channel) {
 
           initRTCPeerConnection(theComunicator, channel, unknownPeerValue);
-          theComunicator.broadcast({
+          theComunicator.sendTo(unknownPeerValue, {
             'type': 'join-channel',
             'channel': channel
           });

@@ -5,6 +5,7 @@
   "main": "src/node/index.js",
   "scripts": {
     "test": "node spec/start-node.js",
+    "debug": "node-debug spec/start-node.js",
     "lint": "eslint -c .eslintrc src && jscs -c .jscs src"
   },
   "files": [
@@ -30,6 +31,7 @@
     "jscs": "*",
     "uglifyjs": "*",
     "hapi": "*",
-    "jsonwebtoken": "*"
+    "jsonwebtoken": "*",
+    "node-inspector": "*"
   }
 }
