@@ -21,30 +21,44 @@
       </div>
     </p>
     <div class="row center-align">
-      <div class="col s4">
+      <div class="col s3">
         <button id="create-channel" class="btn col m12 blue waves-effect waves-light">
           Create Channel
         </button>
       </div>
-      <div class="col s4">
+      <div class="col s3">
         <button id="join-channel" class="btn col m12 indigo waves-effect waves-light">
           Join Channel
         </button>
       </div>
-      <div class="col s4">
-        <button id="leave-channel" class="btn col m12 pink  waves-effect waves-light">
+
+      <div class="col s3">
+        <button id="plug-channel" disabled="disabled" class="btn col m12 grey accent-4 waves-effect waves-light">
+          Plug Channel
+        </button>
+      </div>
+      <div class="col s3">
+        <button id="leave-channel" class="btn col m12 pink waves-effect waves-light">
           Leave Channel
         </button>
       </div>
     </div>
+    <p class="container">
+      <div class="row">
+        <div class="input-field col s12">
+          <textarea id="text-to-datachannel" class="materialize-textarea"></textarea>
+          <label for="text-to-datachannel">Data channel text</label>
+        </div>
+      </div>
+      <button class="btn white grey-text" id="send-on-datachannel">Send</button>
+    </p>
     <div class="card white">
       <div class="card-content">
         <h6 class="center-align">
           Message
         </h6>
         <p class="col m12 center-align blue-text">Some message !?</p>
-        <div id="audio">
-        </div>
+        <div class="row center-align" id="audio"></div>
       </div>
     </div>
   </div>
