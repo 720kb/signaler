@@ -8,7 +8,7 @@
     , userIdentifierTextElement = document.getElementById('user-identifier')
     , roomIdentifierTextElement = document.getElementById('room-identifier')
     , domEvent = 'comunicator:ready'
-    , signaler = new window.Signaler([domEvent], 'ws://localhost:9876', {
+    , signaler = new window.Signaler([domEvent], 'ws://151.62.53.103:9876', {
         'audio': true,
         'video': false
       }, {
@@ -93,4 +93,24 @@
       };
     }
   });
+
+  window.addEventListener('stream:arrive', function onStreamArrival(event) {
+
+    if (event &&
+      event.detail &&
+      event.detail.mediaElement &&
+      event.detail.userid) {
+
+      var audioElement = document.createElement('audio')
+        , audioParentElement = document.getElementById('audio');
+
+      window.attachMediaStream(audioElement, event.detail.mediaElement);
+      audioElement.id = event.detail.userid;
+      audioElement.controls = 'true';
+      audioElement.play();
+
+      audioParentElement.appendChild(audioElement);
+    }
+  }, false);
+
 }(window, document));
