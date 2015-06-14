@@ -167,9 +167,7 @@
   window.addEventListener('stream:data-arrived', function onStreamDataArrival(event) {
 
     if (event &&
-      event.detail &&
-      event.detail.mediaElement &&
-      event.detail.userid) {
+      event.detail) {
 
       var dataChannelTextElement = document.getElementById('message-on-datachannel');
 
