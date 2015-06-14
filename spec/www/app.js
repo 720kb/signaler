@@ -5,6 +5,9 @@
   var createChannelButtonElement = document.getElementById('create-channel')
     , joinChannelButtonElement = document.getElementById('join-channel')
     , leaveChannelButtonElement = document.getElementById('leave-channel')
+    , plugChannelButtonElement = document.getElementById('plug-channel')
+    , sendOnDataChannelButtonElement = document.getElementById('send-on-datachannel')
+    , textToDataChannelTextAreaElement = document.getElementById('text-to-datachannel')
     , userIdentifierTextElement = document.getElementById('user-identifier')
     , roomIdentifierTextElement = document.getElementById('room-identifier')
     , domEvent = 'comunicator:ready'
@@ -79,6 +82,43 @@
         }
       };
 
+      plugChannelButtonElement.onclick = function onPlugChannelClick() {
+
+        if (roomIdentifierTextElement &&
+          roomIdentifierTextElement.value) {
+
+          theSignaler.streamOnChannel(roomIdentifierTextElement.value);
+        }
+      };
+
+      sendOnDataChannelButtonElement.onclick = function onSendOnDataChannel() {
+
+        if (textToDataChannelTextAreaElement &&
+          textToDataChannelTextAreaElement.value) {
+
+          var allDataChannels = theSignaler.getDataChannels()
+            , dataChannels
+            , dataChannelsIndex = 0
+            , aDataCannel;
+
+          if (allDataChannels) {
+
+            dataChannels = allDataChannels[roomIdentifierTextElement.value];
+            if (dataChannels) {
+
+              for (dataChannelsIndex = 0; dataChannelsIndex < dataChannels.length; dataChannelsIndex += 1) {
+
+                aDataCannel = dataChannels[dataChannelsIndex];
+                if (aDataCannel) {
+
+                  aDataCannel.send(textToDataChannelTextAreaElement.value);
+                }
+              }
+            }
+          }
+        }
+      };
+
       leaveChannelButtonElement.onclick = function onLeaveChannelClick() {
 
         if (roomIdentifierTextElement &&
@@ -110,6 +150,7 @@
       audioElement.play();
 
       audioParentElement.appendChild(audioElement);
+      plugChannelButtonElement.removeAttribute('disabled');
     }
   }, false);
 
