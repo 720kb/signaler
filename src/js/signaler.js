@@ -181,6 +181,11 @@
       }
       , manageOnIceConnectionStateChange = function manageOnIceConnectionStateChange(channel, event) {
 
+        if (event.target) {
+
+          window.console.debug('Ice state:', event.target.iceConnectionState);
+        }
+
         if (event.target &&
           event.target.iceConnectionState === 'disconnected') {
 
@@ -207,9 +212,6 @@
               delete peerConnections[channel][aPeerNameInChannel];
             }
           }
-        } else {
-
-          window.console.debug('Ice state already disconnected');
         }
       }
       , notifySettingRemoteDescription = function notifySettingRemoteDescription(theComunicator, who, channel) {
@@ -290,9 +292,6 @@
         if (myStream) {
 
           this.createOffer(onManageOfferWithComunicatorAndChannelAndWho, errorOnCreateOffer);
-        } else {
-
-          window.console.warn('cause', 'No personal stream bounded');
         }
       }
       , manageLocalStream = function manageLocalStream(channel, who, localStream) {

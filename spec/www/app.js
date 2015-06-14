@@ -9,17 +9,12 @@
     , roomIdentifierTextElement = document.getElementById('room-identifier')
     , domEvent = 'comunicator:ready'
     , signaler = new window.Signaler([domEvent], 'ws://localhost:9876', {
-        'audio': {
-          'mandatory': {
-            'googEchoCancellation': 'false',
-            'googAutoGainControl': 'false',
-            'googNoiseSuppression': 'false',
-            'googHighpassFilter': 'false'
-          }
-        }
+        'audio': true,
+        'video': false
       }, {
         'mandatory': {
-          'OfferToReceiveAudio': true
+          'OfferToReceiveAudio': true,
+          'OfferToReceiveVideo': false
         }
       })
     , token
