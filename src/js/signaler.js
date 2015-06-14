@@ -294,7 +294,7 @@
           this.createOffer(onManageOfferWithComunicatorAndChannelAndWho, errorOnCreateOffer);
         }
       }
-      , manageLocalStream = function manageLocalStream(channel, who, localStream) {
+      , manageLocalStream = function manageLocalStream(theComunicator, channel, who, localStream) {
 
         var domEventToDispatch
           , onManageOnNegotiationNeededWithChannelAndWho;
@@ -315,7 +315,7 @@
         if (who !== unknownPeerValue &&
           peerConnections[channel][who]) {
 
-          onManageOnNegotiationNeededWithChannelAndWho = manageOnNegotiationNeeded.bind(peerConnections[channel][who], channel, who);
+          onManageOnNegotiationNeededWithChannelAndWho = manageOnNegotiationNeeded.bind(peerConnections[channel][who], theComunicator, channel, who);
           peerConnections[channel][who].onnegotiationneeded = onManageOnNegotiationNeededWithChannelAndWho;
           peerConnections[channel][who].addStream(myStream);
         } else {
@@ -543,7 +543,7 @@
           comunicator &&
           comunicator.whoReallyAmI) {
 
-          var manageLocalStreamWithChannel = manageLocalStream.bind(this, channel, unknownPeerValue);
+          var manageLocalStreamWithChannel = manageLocalStream.bind(this, theComunicator, channel, unknownPeerValue);
 
           channelInitiator[channel] = comunicator.whoReallyAmI;
           initRTCPeerConnection(theComunicator, channel, unknownPeerValue);
@@ -571,7 +571,7 @@
 
         if (channel) {
 
-          var manageLocalStreamWithChannelAndOwner = manageLocalStream.bind(this, channel, channelInitiator[channel]);
+          var manageLocalStreamWithChannelAndOwner = manageLocalStream.bind(this, theComunicator, channel, channelInitiator[channel]);
 
           window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannelAndOwner, errorOnGetUserMedia);
         } else {

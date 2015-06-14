@@ -96,9 +96,11 @@
         if (textToDataChannelTextAreaElement &&
           textToDataChannelTextAreaElement.value) {
 
-          var allDataChannels = theSignaler.getDataChannels()
+          var allDataChannels = theSignaler.dataChannels()
             , dataChannels
-            , dataChannelsIndex = 0
+            , dataChannelsOwners
+            , dataChannelsOwnersIndex = 0
+            , aDataCannelOwner
             , aDataCannel;
 
           if (allDataChannels) {
@@ -106,12 +108,20 @@
             dataChannels = allDataChannels[roomIdentifierTextElement.value];
             if (dataChannels) {
 
-              for (dataChannelsIndex = 0; dataChannelsIndex < dataChannels.length; dataChannelsIndex += 1) {
+              dataChannelsOwners = Object.keys(dataChannels);
+              if (dataChannelsOwners) {
 
-                aDataCannel = dataChannels[dataChannelsIndex];
-                if (aDataCannel) {
+                for (dataChannelsOwnersIndex = 0; dataChannelsOwnersIndex < dataChannelsOwners.length; dataChannelsOwnersIndex += 1) {
 
-                  aDataCannel.send(textToDataChannelTextAreaElement.value);
+                  aDataCannelOwner = dataChannelsOwners[dataChannelsOwnersIndex];
+                  if (aDataCannelOwner) {
+
+                    aDataCannel = dataChannels[aDataCannelOwner];
+                    if (aDataCannel) {
+
+                      aDataCannel.send(textToDataChannelTextAreaElement.value);
+                    }
+                  }
                 }
               }
             }
