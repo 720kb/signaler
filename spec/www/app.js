@@ -122,7 +122,7 @@
 
       var dataChannelTextElement = document.getElementById('message-on-datachannel');
 
-      dataChannelTextElement.innerHTML(event.detail);
+      dataChannelTextElement.innerHTML = event.detail;
     }
   }, false);
 
