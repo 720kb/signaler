@@ -610,7 +610,7 @@
         if (theIceCandidates &&
           theIceCandidates.length > 0) {
 
-          comunicator.sendTo(whoami, who, {
+          comunicator.sendTo(who, whoami, {
             'type': 'candidate',
             'channel': channel,
             'candidate': theIceCandidates
