@@ -121,7 +121,7 @@
           throw 'channel name [channel], user [who] or offer [offer] provided are invalid';
         }
 
-        if (offers[channel]) {
+        if (offers[channel]) { //TODO manage multiple offers...
 
           /*eslint-disable no-console*/
           console.warn('There already is an offer for channel', channel, 'identified by', offers[channel]);
@@ -182,7 +182,7 @@
           console.warn('un-managed scenario...');
           /*eslint-enable no-console*/
         }
-      }
+      }/*
       , addApprovedUserForChannel = function addApprovedUserForChannel(channel, who) {
 
         if (!channel ||
@@ -197,7 +197,7 @@
         }
 
         approvedUsers[channel].push(who);
-      }
+      }*/
       , getListenersForChannel = function getListenersForChannel(channel) {
 
         if (!channel) {
@@ -532,11 +532,14 @@
       , addOfferForChannel = function addOfferForChannel(offer, whoami, channel) {
 
         var theWaiters = getWaitersForChannel(channel)
+          , initiator = getInitiatorForChannel(channel)
           , firstWaiter
           , theWaitersIndex
           , aWaiter;
 
-        if (theWaiters &&
+        if (initiator &&
+            whoami === initiator &&
+            theWaiters &&
             theWaiters.length > 0) {
 
           firstWaiter = theWaiters[0];
@@ -622,7 +625,7 @@
           'type': 'p2p-is-instantiated',
           'channel': channel
         });
-      }
+      }/*
       , sendUsersToConnectWithToApproved = function sendUsersToConnectWithToApproved(channel, who, whoami) {
 
         var initiator = getInitiatorForChannel(channel)
@@ -665,7 +668,7 @@
             'channel': channel
           });
         }
-      }
+      }*/
       , onComunicatorMessage = function onComunicatorMessage(payload) {
         // { 'whoami': parsedMsg.data.whoami, 'who': parsedMsg.data.who, 'what': parsedMsg.data.what }
         if (payload &&
@@ -681,6 +684,7 @@
             , anApprovedUser;
 
           switch (messageBody.type) {
+
             case 'open': {
 
               setInitiatorForChannel(messageBody.channel, payload.whoami);
@@ -771,7 +775,13 @@
               break;
             }
 
-            case 'approve': {
+            case 'join-p2p': {
+
+              sendOffersTo(messageBody.channel, payload.whoami);
+              break;
+            }
+
+            /*case 'approve': {
 
               sendUsersToConnectWithToApproved(messageBody.channel, payload.who, payload.whoami);
               break;
@@ -781,7 +791,7 @@
 
               sendNotApproval(messageBody.channel, payload.who, payload.whoami);
               break;
-            }
+            }*/
 
             default: {
 

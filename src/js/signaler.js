@@ -461,15 +461,16 @@
 
             case 'p2p-is-instantiated': {
 
-              /*
-              if (!peerConnections[channel][parsedMsg.whoami]) {
+              if (!peerConnections[eventArrived.what.channel][eventArrived.whoami]) {
 
                 myTmpPeerConnection = undefined;
                 myTmpDataChannel = undefined;
-                initRTCPeerConnection(whoami, channel, parsedMsg.whoami);
+                initRTCPeerConnection(theComunicator, eventArrived.what.channel, eventArrived.whoami);
               }
-              this.send('join', channel, parsedMsg.whoami, whoami);
-              */
+              theComunicator.sendTo(eventArrived.whoami, {
+                'type': 'join-p2p',
+                'channel': eventArrived.what.channel
+              });
               break;
             }
 

@@ -45,7 +45,6 @@
       userIdentifier = jsonResponse.userID;
       userIdentifierTextElement.value = userIdentifier;
       kickOffEvent = new window.Event(domEvent);
-
       window.dispatchEvent(kickOffEvent);
     }
   }, function onFailure(failure) {
