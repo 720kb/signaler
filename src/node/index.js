@@ -540,8 +540,7 @@
             theWaiters.length > 0) {
 
           firstWaiter = theWaiters[0];
-          if (firstWaiter &&
-            firstWaiter.length > 0) {
+          if (firstWaiter) {
 
             comunicator.sendTo(whoami, firstWaiter, {
               'type': 'offer',
