@@ -389,7 +389,8 @@
           throw 'channel name [channel] or user [who] provided are invalid';
         }
 
-        if (iceCandidates[channel][who]) {
+        if (iceCandidates[channel] &&
+          iceCandidates[channel][who]) {
 
           delete iceCandidates[channel][who];
           if (isEmpty(iceCandidates[channel])) {
@@ -589,7 +590,7 @@
         } else if (initiator) {
 
           comunicator.sendTo(whoami, initiator, {
-            'type': 'p2p-inst',
+            'type': 'instantiate-p2p',
             'channel': channel
           });
         } else {
@@ -618,13 +619,6 @@
             'candidate': theIceCandidates
           });
         }
-      }
-      , sendP2PIsInst = function sendP2PIsInst(channel, who, whoami) {
-
-        comunicator.sendTo(whoami, who, {
-          'type': 'p2p-is-instantiated',
-          'channel': channel
-        });
       }/*
       , sendUsersToConnectWithToApproved = function sendUsersToConnectWithToApproved(channel, who, whoami) {
 
@@ -691,7 +685,10 @@
               addOfferForChannel(messageBody.offer, payload.whoami, messageBody.channel);
               if (payload.who !== unknownPeerValue) {
 
-                sendP2PIsInst(messageBody.channel, payload.who, payload.whoami);
+                comunicator.sendTo(payload.whoami, payload.who, {
+                  'type': 'p2p-is-instantiated',
+                  'channel': messageBody.channel
+                });
               }
               break;
             }
@@ -771,12 +768,6 @@
             case 'join-channel': {
 
               addListenerForChannel(messageBody.channel, payload.whoami);
-              sendOffersTo(messageBody.channel, payload.whoami);
-              break;
-            }
-
-            case 'join-p2p': {
-
               sendOffersTo(messageBody.channel, payload.whoami);
               break;
             }

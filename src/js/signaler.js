@@ -289,8 +289,10 @@
 
         var onManageOfferWithComunicatorAndChannelAndWho = manageCreateOffer.bind(this, theComunicator, channel, who);
 
-        if (myStream) {
+        if (myStream &&
+          !this.singleton) {
 
+          this.singleton = true;
           this.createOffer(onManageOfferWithComunicatorAndChannelAndWho, errorOnCreateOffer);
         }
       }
@@ -389,11 +391,12 @@
 
                   peerConnections[eventArrived.what.channel][eventArrived.whoami] = myTmpPeerConnection;
                   dataChannels[eventArrived.what.channel][eventArrived.whoami] = myTmpDataChannel;
+                  peerConnections[eventArrived.what.channel][eventArrived.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
+
                   myTmpPeerConnection = undefined;
                   myTmpDataChannel = undefined;
                 }
 
-                peerConnections[eventArrived.what.channel][eventArrived.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
                 manageCreateAnswer.call(peerConnections[eventArrived.what.channel][eventArrived.whoami],
                   theComunicator,
                   eventArrived.what.channel,
@@ -415,11 +418,12 @@
 
                   peerConnections[eventArrived.what.channel][eventArrived.whoami] = myTmpPeerConnection;
                   dataChannels[eventArrived.what.channel][eventArrived.whoami] = myTmpDataChannel;
+                  peerConnections[eventArrived.what.channel][eventArrived.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
+
                   myTmpPeerConnection = undefined;
                   myTmpDataChannel = undefined;
                 }
 
-                peerConnections[eventArrived.what.channel][eventArrived.whoami].onicecandidate = manageOnIceCandidate.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
                 manageSetRemoteDescription.call(peerConnections[eventArrived.what.channel][eventArrived.whoami],
                   theComunicator,
                   eventArrived.what.answer,
@@ -450,15 +454,6 @@
               break;
             }
 
-            case 'p2p-inst': {
-
-              /*
-              initRTCPeerConnection(whoami, channel, parsedMsg.whoami);
-              manageLocalStream(channel, whoami, parsedMsg.whoami, myStream);
-              */
-              break;
-            }
-
             case 'p2p-is-instantiated': {
 
               if (!peerConnections[eventArrived.what.channel][eventArrived.whoami]) {
@@ -468,17 +463,31 @@
                 initRTCPeerConnection(theComunicator, eventArrived.what.channel, eventArrived.whoami);
               }
               theComunicator.sendTo(eventArrived.whoami, {
-                'type': 'join-p2p',
+                'type': 'join-channel',
                 'channel': eventArrived.what.channel
               });
               break;
             }
 
+            case 'instantiate-p2p': {
+
+              if (myStream) {
+
+                initRTCPeerConnection(theComunicator, eventArrived.what.channel, eventArrived.whoami);
+                manageLocalStream(theComunicator, eventArrived.what.channel, eventArrived.whoami, myStream);
+              } else {
+
+                window.console.error('User stream [myStream] is not defined...');
+              }
+              break;
+            }
+
             case 'redo-join': {
 
-              /*
-              this.send('join', channel, parsedMsg.whoami, whoami);
-              */
+              theComunicator.sendTo(eventArrived.whoami, {
+                'type': 'join-channel',
+                'channel': eventArrived.what.channel
+              });
               break;
             }
 
