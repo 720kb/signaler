@@ -375,7 +375,17 @@
           var eventArrived = event.detail
             , candidatesLength
             , candidateIndex = 0
-            , aCandidate;
+            , aCandidate
+            , channelListeners
+            , channelListenersLength
+            , channelListenersIndex
+            , aChannelListener
+            , peersInChannel
+            , peersNamesInChannel
+            , peersNamesInChannelLength
+            , theChannelInitiator
+            , peersNamesInChannelIndex
+            , aChannelPeer;
 
           switch (eventArrived.what.type) {
 
@@ -493,46 +503,42 @@
 
             case 'approved': {
 
-              /*
-              if (parsedMsg.payload) {
+              channelListeners = eventArrived.what.listeners;
+              channelListenersLength = channelListeners.length;
+              for (channelListenersIndex = 0; channelListenersIndex < channelListenersLength; channelListenersIndex += 1) {
 
-                usersToConnectToLength = parsedMsg.payload.length;
-                for (i = 0; i < usersToConnectToLength; i += 1) {
+                aChannelListener = channelListeners[channelListenersIndex];
+                if (aChannelListener) {
 
-                  aUserInChannel = parsedMsg.payload[i];
-                  if (peerConnections[channel][aUserInChannel]) {
+                  if (peerConnections[eventArrived.what.channel][aChannelListener]) {
 
-                    peerConnections[channel][aUserInChannel].addStream(myStream);
+                    peerConnections[eventArrived.what.channel][aChannelListener].singleton = false;
+                    peerConnections[eventArrived.what.channel][aChannelListener].addStream(myStream);
                   } else {
 
-                    initRTCPeerConnection(whoami, channel, aUserInChannel);
-                    manageLocalStream(channel, whoami, aUserInChannel, myStream);
+                    initRTCPeerConnection(theComunicator, eventArrived.what.channel, aChannelListener);
+                    manageLocalStream(theComunicator, eventArrived.what.channel, aChannelListener, myStream);
                   }
                 }
-              } else {
-
-              window.console.warn('No payload');
               }
-              */
               break;
             }
 
             case 'un-approved': {
 
-              /*
-              channelPeers = peerConnections[channel];
-              channelPeersNames = Object.keys(channelPeers);
-              channelPeersNamesLength = channelPeersNames.length;
-              theChannelInitiatior = channelInitiator[channel];
-              for (i = 0; i < channelPeersNamesLength; i += 1) {
+              peersInChannel = peerConnections[eventArrived.what.channel];
+              peersNamesInChannel = Object.keys(peersInChannel);
+              peersNamesInChannelLength = peersNamesInChannel.length;
+              theChannelInitiator = channelInitiator[eventArrived.what.channel];
+              for (peersNamesInChannelIndex = 0; peersNamesInChannelIndex < peersNamesInChannelLength; peersNamesInChannelIndex += 1) {
 
-                aChannelPeer = channelPeersNames[i];
-                if (aChannelPeer !== theChannelInitiatior) {
+                aChannelPeer = peersNamesInChannel[peersNamesInChannelIndex];
+                if (aChannelPeer !== String(theChannelInitiator)) {
 
-                  peerConnections[channel][aChannelPeer].removeStream(myStream);
+                  peerConnections[eventArrived.what.channel][aChannelPeer].singleton = false;
+                  peerConnections[eventArrived.what.channel][aChannelPeer].removeStream(myStream);
                 }
               }
-              */
               break;
             }
 

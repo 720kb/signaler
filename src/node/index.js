@@ -258,7 +258,7 @@
         console.warn('un-managed scenario...');
         /*eslint-enable no-console*/
       }
-    }/*
+    }
     , addApprovedUserForChannel = function addApprovedUserForChannel(channel, who) {
 
       if (!channel ||
@@ -273,7 +273,7 @@
       }
 
       approvedUsers[channel].push(who);
-    }*/
+    }
     , addIceCandidateForUserInChannel = function addIceCandidateForUserInChannel(channel, who, iceCandidate) {
 
       if (!channel ||
@@ -644,33 +644,26 @@
             'candidate': theIceCandidates
           });
         }
-      }/*
+      }
       , sendUsersToConnectWithToApproved = function sendUsersToConnectWithToApproved(channel, who, whoami) {
 
         var initiator = getInitiatorForChannel(channel)
           , listenersForChannel = getListenersForChannel(channel)
-          , usersInChannel = Object.keys(listenersForChannel)
-          , ownerInChannel = usersInChannel.indexOf(whoami)
-          , approvedUserInChannel;
+          , approvedUserInChannel = listenersForChannel.indexOf(who);
 
         if (initiator &&
             who &&
             initiator === whoami) {
 
-          if (ownerInChannel >= 0) {
+          if (approvedUserInChannel >= 0) {
 
-            usersInChannel.splice(ownerInChannel, 1);
-            approvedUserInChannel = usersInChannel.indexOf(who);
-            if (approvedUserInChannel >= 0) {
-
-              usersInChannel.splice(approvedUserInChannel, 1);
-              addApprovedUserForChannel(channel, who);
-              comunicator.sendTo(whoami, who, {
-                'type': 'approved',
-                'channel': channel,
-                'data': usersInChannel
-              });
-            }
+            listenersForChannel.splice(approvedUserInChannel, 1);
+            addApprovedUserForChannel(channel, who);
+            comunicator.sendTo(whoami, who, {
+              'type': 'approved',
+              'channel': channel,
+              'listeners': listenersForChannel
+            });
           }
         }
       }
@@ -682,12 +675,13 @@
           initiator === whoami) {
 
           removeApprovedUserForChannel(channel, who);
+          addListenerForChannel(channel, who);
           comunicator.sendTo(whoami, who, {
             'type': 'un-approved',
             'channel': channel
           });
         }
-      }*/
+      }
       , onComunicatorMessage = function onComunicatorMessage(payload) {
 
         // { 'whoami': parsedMsg.data.whoami, 'who': parsedMsg.data.who, 'what': parsedMsg.data.what }
@@ -762,8 +756,11 @@
                     if (anApprovedUser &&
                       anApprovedUser !== payload.who) {
 
-                      console.info('Sending approved to', anApprovedUser);
-                      //sockets[messageBody.channel][anApprovedUser].send('approved', messageBody.channel, payload.who, payload.whoami, [payload.who]);
+                      comunicator.sendTo(payload.whoami, anApprovedUser, {
+                        'type': 'approved',
+                        'channel': messageBody.channel,
+                        'listeners': [payload.who]
+                      });
                     }
                   }
                 }
@@ -785,7 +782,7 @@
               break;
             }
 
-            /*case 'approve': {
+            case 'approve': {
 
               sendUsersToConnectWithToApproved(messageBody.channel, payload.who, payload.whoami);
               break;
@@ -795,7 +792,7 @@
 
               sendNotApproval(messageBody.channel, payload.who, payload.whoami);
               break;
-            }*/
+            }
 
             default: {
 

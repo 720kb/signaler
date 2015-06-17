@@ -57,6 +57,26 @@
     if (theSignaler) {
 
       theSignaler.userIsPresent(userIdentifier, token);
+      window.approveUser = function approveUser(whoToApprove) {
+
+        if (roomIdentifierTextElement &&
+          roomIdentifierTextElement.value &&
+          whoToApprove) {
+
+          theSignaler.approve(roomIdentifierTextElement.value, whoToApprove);
+        }
+      };
+
+      window.unApproveUser = function unApproveUser(whoToUnApprove) {
+
+        if (roomIdentifierTextElement &&
+          roomIdentifierTextElement.value &&
+          whoToUnApprove) {
+
+          theSignaler.unApprove(roomIdentifierTextElement.value, whoToUnApprove);
+        }
+      };
+
       createChannelButtonElement.onclick = function onCreateChannelClick() {
 
         if (roomIdentifierTextElement &&
