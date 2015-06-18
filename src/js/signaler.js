@@ -1,5 +1,5 @@
-/*global window*/
-(function plainOldJs(window) {
+/*global window Comunicator*/
+(function plainOldJs(window, Comunicator) {
   'use strict';
 
   var Signaler = function Signaler(domEvents, url, getUserMediaConst, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt) {
@@ -219,7 +219,7 @@
         theComunicator.sendTo(who, {
           'type': 'use-ice-candidates',
           'channel': channel
-        });
+        }, true);
       }
       , manageSetRemoteDescription = function manageSetRemoteDescription(theComunicator, answer, who, channel) {
 
@@ -239,7 +239,7 @@
             'type': 'ice-candidate',
             'channel': channel,
             'candidate': event.candidate
-          });
+          }, true);
         } else {
 
           window.console.debug('Event arrived, channel or user invalid');
@@ -253,11 +253,11 @@
             'type': 'answer',
             'channel': channel,
             'answer': answer
-          });
+          }, true);
           theComunicator.sendTo(who, {
             'type': 'use-ice-candidates',
             'channel': channel
-          });
+          }, true);
         }, errorOnSetLocalDescription);
       }
       , onSetRemoteDescription = function onSetRemoteDescription(theComunicator, channel, who) {
@@ -282,7 +282,7 @@
             'type': 'open',
             'channel': channel,
             'offer': offer
-          });
+          }, true);
         }, errorOnSetLocalDescription);
       }
       , manageOnNegotiationNeeded = function manageOnNegotiationNeeded(theComunicator, channel, who) {
@@ -475,7 +475,7 @@
               theComunicator.sendTo(eventArrived.whoami, {
                 'type': 'join-channel',
                 'channel': eventArrived.what.channel
-              });
+              }, true);
               break;
             }
 
@@ -497,7 +497,7 @@
               theComunicator.sendTo(eventArrived.whoami, {
                 'type': 'join-channel',
                 'channel': eventArrived.what.channel
-              });
+              }, true);
               break;
             }
 
@@ -577,7 +577,7 @@
           theComunicator.sendTo(unknownPeerValue, {
             'type': 'join-channel',
             'channel': channel
-          });
+          }, true);
         } else {
 
           window.console.warn('cause', 'Please provide channel name');
@@ -605,7 +605,7 @@
           theComunicator.sendTo(whoToApprove, {
             'type': 'approve',
             'channel': channel
-          });
+          }, true);
         } else {
 
           window.console.warn('cause', 'Please review your code');
@@ -619,7 +619,7 @@
           theComunicator.sendTo(whoToUnApprove, {
             'type': 'un-approve',
             'channel': channel
-          });
+          }, true);
         } else {
 
           window.console.warn('cause', 'Please review your code');
@@ -667,7 +667,7 @@
           theComunicator.broadcast({
             'type': 'leave-channel',
             'channel': channel
-          });
+          }, true);
           window.removeEventListener('comunicator:to-me', arrivedToMe, false);
         } else {
 
@@ -743,9 +743,15 @@
 
     if (url &&
       domEvents &&
-      window.Comunicator) {
+      Comunicator) {
 
-      comunicator = new window.Comunicator(url, true);
+      if (url instanceof Comunicator) {
+
+        comunicator = url;
+      } else if (typeof url === 'string' || url instanceof String) {
+
+        comunicator = new Comunicator(url);
+      }
     } else {
 
       window.console.warn('cause', 'Missing mandatory <url> parameters or comunicator not present.');
@@ -779,4 +785,4 @@
   };
 
   window.Signaler = Signaler;
-}(window));
+}(window, Comunicator));
