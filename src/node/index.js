@@ -78,9 +78,12 @@
 
       if (offers[channel]) {
 
-        var toReturn = offers[channel];
+        var toReturn = offers[channel].pop();
 
-        delete offers[channel];
+        if (offers[channel].length === 0) {
+
+          delete offers[channel];
+        }
         return toReturn;
       }
 
@@ -212,18 +215,15 @@
         throw 'channel name [channel], user [who] or offer [offer] provided are invalid';
       }
 
-      if (offers[channel]) { //TODO manage multiple offers...
+      if (!offers[channel]) {
 
-        /*eslint-disable no-console*/
-        console.warn('There already is an offer for channel', channel, 'identified by', offers[channel]);
-        /*eslint-enable no-console*/
-      } else {
-
-        offers[channel] = {
-          'who': who,
-          'offer': offer
-        };
+        offers[channel] = [];
       }
+
+      offers[channel].splice(0, 0, {
+        'who': who,
+        'offer': offer
+      });
     }
     , addListenerForChannel = function addListenerForChannel(channel, who) {
 
@@ -317,10 +317,17 @@
         throw 'channel name [channel] or user [who ]provided are invalid';
       }
 
-      if (offers[channel] &&
-        offers[channel].who === who) {
+      if (offers[channel]) {
 
-        delete offers[channel];
+        offers[channel] = offers[channel].filter(function onEachElement(element) {
+
+          return element && element.who && element.who !== who;
+        });
+
+        if (offers[channel].length === 0) {
+
+          delete offers[channel];
+        }
       }
     }
     , removeIceCandidatesForUserInChannel = function removeIceCandidatesForUserInChannel(channel, who) {
