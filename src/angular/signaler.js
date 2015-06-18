@@ -13,7 +13,7 @@
       };
 
     return {
-      'setComunicatorServerURL': initSignaler,
+      'initSignaler': initSignaler,
       '$get': ['$rootScope', '$window', '$log',
       function instantiateProvider($rootScope, $window, $log) {
 
