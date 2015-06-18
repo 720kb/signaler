@@ -9,7 +9,7 @@
     "min": "npm run-script js-min && npm run-script ng-min",
     "test": "node spec/start-node.js",
     "debug": "node-debug spec/start-node.js",
-    "lint": "eslint -c .eslintrc src && jscs -c .jscs src",
+    "lint": "eslint -c .eslintrc src && jscs -c .jscsrc src",
     "precommit": "npm run-script lint"
   },
   "files": [
