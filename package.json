@@ -1,37 +1,43 @@
 {
   "name": "siglr",
-  "version": "1.1.3",
+  "version": "2.0.0",
   "description": "",
   "main": "src/node/index.js",
   "scripts": {
+    "js-min": "./tasks/banner | xargs -0 -I banner uglifyjs src/js/signaler.js --preamble banner -c -m --screw-ie8 -p relative --source-map dist/signaler.min.js.map -o dist/signaler.min.js",
+    "ng-min": "./tasks/banner | xargs -0 -I banner uglifyjs src/js/signaler.js src/angular/signaler.js --preamble banner -c -m --screw-ie8 -p relative --source-map dist/signaler-angular.min.js.map -o dist/signaler-angular.min.js",
+    "min": "npm run-script js-min && npm run-script ng-min",
     "test": "node spec/start-node.js",
     "debug": "node-debug spec/start-node.js",
-    "lint": "eslint -c .eslintrc src && jscs -c .jscs src"
+    "lint": "eslint -c .eslintrc src && jscs -c .jscs src",
+    "precommit": "npm run-script lint"
   },
   "files": [
     "src/node/index.js",
-    "client.js"
+    "src/js/signaler.js",
+    "src/angular/signaler.js"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/wouldgo/signaler.git"
+    "url": "https://github.com/720kb/signaler.git"
   },
   "author": "Dario Andrei <wouldgo84@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wouldgo/signaler/issues"
+    "url": "https://github.com/720kb/signaler/issues"
   },
-  "homepage": "https://github.com/wouldgo/signaler",
+  "homepage": "https://github.com/720kb/signaler",
   "dependencies": {
     "comunicator": "^2.0.0",
     "webrtc-adapter-test": "*"
   },
   "devDependencies": {
     "eslint": "*",
-    "jscs": "*",
-    "uglifyjs": "*",
     "hapi": "*",
+    "husky": "*",
+    "jscs": "*",
     "jsonwebtoken": "*",
-    "node-inspector": "*"
+    "node-inspector": "*",
+    "uglifyjs": "*"
   }
 }
