@@ -314,8 +314,7 @@
         //audioContext.createMediaStreamSource(myStream);
         //, contextifiedLocalStream = audioContext.createMediaStreamDestination();
 
-        if (who !== unknownPeerValue &&
-          peerConnections[channel][who]) {
+        if (peerConnections[channel][who]) {
 
           onManageOnNegotiationNeededWithChannelAndWho = manageOnNegotiationNeeded.bind(peerConnections[channel][who], theComunicator, channel, who);
           peerConnections[channel][who].onnegotiationneeded = onManageOnNegotiationNeededWithChannelAndWho;
