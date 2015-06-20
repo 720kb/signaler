@@ -562,7 +562,13 @@
 
           channelInitiator[channel] = comunicator.whoReallyAmI;
           initRTCPeerConnection(theComunicator, channel, unknownPeerValue);
-          window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannel, errorOnGetUserMedia);
+          if (myStream) {
+
+            manageLocalStreamWithChannel(myStream);
+          } else {
+
+            window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannel, errorOnGetUserMedia);
+          }
         } else {
 
           window.console.warn('cause', 'Please provide channel name and user must be notified as present in comunicator');
@@ -588,7 +594,13 @@
 
           var manageLocalStreamWithChannelAndOwner = manageLocalStream.bind(this, theComunicator, channel, channelInitiator[channel]);
 
-          window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannelAndOwner, errorOnGetUserMedia);
+          if (myStream) {
+
+            manageLocalStreamWithChannelAndOwner(myStream);
+          } else {
+
+            window.getUserMedia(getUserMediaConstraints, manageLocalStreamWithChannelAndOwner, errorOnGetUserMedia);
+          }
         } else {
 
           window.console.warn('cause', 'Please provide channel name and user must be notified as present in comunicator');
