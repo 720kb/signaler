@@ -534,32 +534,36 @@
           /*eslint-enable no-console*/
         }
       }
+      , leaveChannel = function leaveChannel(whoami, channel) {
+
+        if (channel) {
+
+          var channelInitiator = getInitiatorForChannel(channel);
+
+          if (channelInitiator === whoami) {
+
+            removeInitiatorForChannel(channel);
+          } else {
+
+            removeWaiterForChannel(channel, whoami);
+            removeListenerForChannel(channel, whoami);
+            removeApprovedUserForChannel(channel, whoami);
+            removeOffersForUserInChannel(channel, whoami);
+            removeIceCandidatesForUserInChannel(channel, whoami);
+          }
+        }
+      }
       , onLeave = function onLeave(whoami) {
 
         var channels = getChannels()
           , channelsLength = channels.length
           , channelsIndex = 0
-          , aChannel
-          , channelInitiator;
+          , aChannel;
 
         for (; channelsIndex < channelsLength; channelsIndex += 1) {
 
           aChannel = channels[channelsIndex];
-          if (aChannel) {
-
-            channelInitiator = getInitiatorForChannel(aChannel);
-            if (channelInitiator === whoami) {
-
-              removeInitiatorForChannel(aChannel);
-            } else {
-
-              removeWaiterForChannel(aChannel, whoami);
-              removeListenerForChannel(aChannel, whoami);
-              removeApprovedUserForChannel(aChannel, whoami);
-              removeOffersForUserInChannel(aChannel, whoami);
-              removeIceCandidatesForUserInChannel(aChannel, whoami);
-            }
-          }
+          leaveChannel(whoami, aChannel);
         }
       }
       , addOfferForChannel = function addOfferForChannel(offer, whoami, channel) {
@@ -798,6 +802,12 @@
             case 'un-approve': {
 
               sendNotApproval(messageBody.channel, payload.who, payload.whoami);
+              break;
+            }
+
+            case 'leave-channel': {
+
+              leaveChannel(payload.whoami, messageBody.channel);
               break;
             }
 
