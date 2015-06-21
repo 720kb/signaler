@@ -636,7 +636,7 @@
           window.console.warn('cause', 'Please review your code');
         }
       }
-      , leaveChannel = function leaveChannel(theComunicator, channel) {
+      , leaveChannel = function leaveChannel(theComunicator, channel, keepMyStream) {
 
         if (channel) {
 
@@ -668,11 +668,11 @@
 
           myTmpPeerConnection = undefined;
           myTmpDataChannel = undefined;
-          if (myStream) {
+          if (!keepMyStream && myStream) {
 
             myStream.stop();
+            myStream = undefined;
           }
-          myStream = undefined;
           delete channelInitiator[channel];
           delete peerConnections[channel];
           theComunicator.broadcast({
