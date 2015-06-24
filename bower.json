@@ -1,0 +1,20 @@
+{
+  "name": "signaler",
+  "version": "2.1.0",
+  "homepage": "https://github.com/720kb/signaler",
+  "authors": [
+    "wouldgo <wouldgo84@gmail.com>"
+  ],
+  "main": "dist/signaler-angular.min.js",
+  "moduleType": [
+    "globals"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
