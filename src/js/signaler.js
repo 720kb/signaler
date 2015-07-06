@@ -752,7 +752,7 @@
     if (url &&
       Comunicator) {
 
-      if (url instanceof Comunicator) {
+      if (url instanceof window.Promise) {
 
         comunicator = url;
       } else if (typeof url === 'string' || url instanceof String) {
@@ -788,7 +788,7 @@
 
       rtcDataChannelOptions = rtcDataChannelOpt;
     }
-    return new Promise(deferred.bind(this));
+    return new window.Promise(deferred.bind(this));
   };
 
   window.Signaler = Signaler;
