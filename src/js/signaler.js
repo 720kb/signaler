@@ -2,7 +2,7 @@
 (function plainOldJs(window, Comunicator) {
   'use strict';
 
-  var Signaler = function Signaler(domEvents, url, getUserMediaConst, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt) {
+  var Signaler = function Signaler(url, getUserMediaConst, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt) {
 
     var unknownPeerValue = 'unknown-peer'
       , myTmpPeerConnection
@@ -554,13 +554,11 @@
       /*Core methods*/
       , createChannel = function createChannel(theComunicator, channel) {
 
-        if (channel &&
-          comunicator &&
-          comunicator.whoReallyAmI) {
+        if (channel) {
 
           var manageLocalStreamWithChannel = manageLocalStream.bind(this, theComunicator, channel, unknownPeerValue);
 
-          channelInitiator[channel] = comunicator.whoReallyAmI;
+          channelInitiator[channel] = theComunicator.whoAmI();
           initRTCPeerConnection(theComunicator, channel, unknownPeerValue);
           if (myStream) {
 
@@ -609,9 +607,8 @@
       , approve = function approve(theComunicator, channel, whoToApprove) {
 
         if (channel &&
-          comunicator.whoReallyAmI &&
           whoToApprove &&
-          channelInitiator[channel] === comunicator.whoReallyAmI) {
+          channelInitiator[channel] === theComunicator.whoAmI()) {
 
           theComunicator.sendTo(whoToApprove, {
             'type': 'approve',
@@ -749,11 +746,10 @@
       }
       , deferred = function deferred(resolve) {
 
-        comunicator.promise(domEvents).then(onComunicatorResolved.bind(this, resolve));
+        comunicator.then(onComunicatorResolved.bind(this, resolve));
       };
 
     if (url &&
-      domEvents &&
       Comunicator) {
 
       if (url instanceof Comunicator) {
