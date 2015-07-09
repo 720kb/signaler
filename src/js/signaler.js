@@ -68,7 +68,9 @@
         }
       }
       , onDataChannelOpen = function onDataChannelOpen() {
+        var domEventToDispatch = new window.CustomEvent('stream:datachannel-opened');
 
+        window.dispatchEvent(domEventToDispatch);
         window.console.info('Data channel', this, 'opened...');
       }
       , onDataChannelClose = function onDataChannelClose() {

@@ -25,6 +25,15 @@
 
           $log.debug('stream:my-stream dispatched');
         }
+        , dataChannelOpened = function dataChannelOpened() {
+
+          $rootScope.$apply(function doApply(scope) {
+
+            scope.$emit('stream:datachannel-opened');
+          });
+
+          $log.debug('stream:datachannel-opened dispatched');
+        }
         , arrivedDataOnDataChannel = function arrivedDataOnDataChannel(event) {
 
           $rootScope.$apply(function doApply(scope) {
@@ -54,6 +63,7 @@
         };
 
         $window.addEventListener('stream:my-stream', arrivedMyStream, false);
+        $window.addEventListener('stream:datachannel-opened', dataChannelOpened, false);
         $window.addEventListener('stream:data-arrived', arrivedDataOnDataChannel, false);
         $window.addEventListener('stream:arrive', arrivedStream, false);
         $window.addEventListener('stream:end', streamEnded, false);
@@ -61,6 +71,7 @@
         $rootScope.$on('$destroy', function unregisterEventListener() {
 
           $window.removeEventListener('stream:my-stream', arrivedMyStream, false);
+          $window.removeEventListener('stream:datachannel-opened', dataChannelOpened, false);
           $window.removeEventListener('stream:data-arrived', arrivedDataOnDataChannel, false);
           $window.removeEventListener('stream:arrive', arrivedStream, false);
           $window.removeEventListener('stream:end', streamEnded, false);
