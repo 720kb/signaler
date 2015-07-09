@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/720kb/signaler",
   "dependencies": {
-    "comunicator": "^2.2.0",
+    "comunicator": "^2.2.1",
     "webrtc-adapter-test": "*"
   },
   "devDependencies": {
