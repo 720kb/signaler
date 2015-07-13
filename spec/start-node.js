@@ -1,4 +1,4 @@
-/*global __dirname require console*/
+/*global __dirname,require,console*/
 (function withModule(__dirname, require, console) {
   'use strict';
 

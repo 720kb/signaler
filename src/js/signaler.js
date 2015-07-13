@@ -1,4 +1,4 @@
-/*global window Comunicator*/
+/*global window,Comunicator*/
 (function plainOldJs(window, Comunicator) {
   'use strict';
 

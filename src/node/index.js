@@ -1,4 +1,4 @@
-/*global require module console*/
+/*global require,module,console*/
 (function withModule(require, module, console) {
   'use strict';
 

@@ -1,4 +1,4 @@
-/*global angular Signaler*/
+/*global angular,Signaler*/
 (function withAngular(angular, Signaler) {
   'use strict';
 

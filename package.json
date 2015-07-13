@@ -6,10 +6,10 @@
   "scripts": {
     "js-min": "./tasks/banner | xargs -0 -I banner uglifyjs src/js/signaler.js --preamble banner -c -m --screw-ie8 -p relative --source-map dist/signaler.min.js.map -o dist/signaler.min.js",
     "ng-min": "./tasks/banner | xargs -0 -I banner uglifyjs src/js/signaler.js src/angular/signaler.js --preamble banner -c -m --screw-ie8 -p relative --source-map dist/signaler-angular.min.js.map -o dist/signaler-angular.min.js",
-    "min": "npm run-script js-min && npm run-script ng-min",
+    "min": "npm run-script js-min && npm run-script ng-min && plato -r -d report -l .jshintrc -t \"signaler\" src/",
     "test": "node spec/start-node.js",
     "debug": "node-debug spec/start-node.js",
-    "lint": "eslint -c .eslintrc src && jscs -c .jscsrc src",
+    "lint": "eslint -c .eslintrc src && jshint -c .jshintrc --reporter=unix src && jscs -c .jscsrc src",
     "precommit": "npm run-script lint"
   },
   "files": [
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/720kb/signaler",
   "dependencies": {
-    "comunicator": "^2.2.1",
+    "comunicator": "^2.2.2",
     "webrtc-adapter-test": "*"
   },
   "devDependencies": {
@@ -36,8 +36,10 @@
     "hapi": "*",
     "husky": "*",
     "jscs": "*",
+    "jshint": "^2.8.0",
     "jsonwebtoken": "*",
     "node-inspector": "*",
+    "plato": "^1.5.0",
     "uglifyjs": "*"
   }
 }

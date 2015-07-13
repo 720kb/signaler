@@ -1,4 +1,4 @@
-/*globals window document*/
+/*globals window,document*/
 (function plainOldJs(window, document) {
   'use strict';
 
