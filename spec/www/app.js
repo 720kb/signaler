@@ -103,36 +103,9 @@
             if (textToDataChannelTextAreaElement &&
               textToDataChannelTextAreaElement.value) {
 
-              var allDataChannels = theSignaler.dataChannels()
-                , dataChannels
-                , dataChannelsOwners
-                , dataChannelsOwnersIndex = 0
-                , aDataCannelOwner
-                , aDataCannel;
-
-              if (allDataChannels) {
-
-                dataChannels = allDataChannels[roomIdentifierTextElement.value];
-                if (dataChannels) {
-
-                  dataChannelsOwners = Object.keys(dataChannels);
-                  if (dataChannelsOwners) {
-
-                    for (dataChannelsOwnersIndex = 0; dataChannelsOwnersIndex < dataChannelsOwners.length; dataChannelsOwnersIndex += 1) {
-
-                      aDataCannelOwner = dataChannelsOwners[dataChannelsOwnersIndex];
-                      if (aDataCannelOwner) {
-
-                        aDataCannel = dataChannels[aDataCannelOwner];
-                        if (aDataCannel) {
-
-                          aDataCannel.send(textToDataChannelTextAreaElement.value);
-                        }
-                      }
-                    }
-                  }
-                }
-              }
+              theSignaler.broadcast(
+                roomIdentifierTextElement.value,
+                textToDataChannelTextAreaElement.value);
             }
           };
 
@@ -156,34 +129,49 @@
     window.console.log(failure);
   });
 
-  window.addEventListener('stream:arrive', function onStreamArrival(event) {
+  window.addEventListener('signaler:ready', function onStreamReady() {
+
+    plugChannelButtonElement.removeAttribute('disabled');
+  }, false);
+
+  window.addEventListener('signaler:my-stream', function onMyStreamArrival(event) {
 
     if (event &&
       event.detail &&
-      event.detail.mediaElement &&
+      event.detail.stream &&
       event.detail.userid) {
 
-      var audioElement = document.createElement('audio')
-        , audioParentElement = document.getElementById('audio');
+      var element = document.getElementById('video');
 
-      window.attachMediaStream(audioElement, event.detail.mediaElement);
-      audioElement.id = event.detail.userid;
-      audioElement.controls = 'true';
-      audioElement.play();
-
-      audioParentElement.appendChild(audioElement);
-      plugChannelButtonElement.removeAttribute('disabled');
+      window.attachMediaStream(element, event.detail.stream);
+      element.id = event.detail.userid;
+      element.play();
     }
   }, false);
 
-  window.addEventListener('stream:data-arrived', function onStreamDataArrival(event) {
+  window.addEventListener('signaler:stream', function onStreamArrival(event) {
+
+    if (event &&
+      event.detail &&
+      event.detail.stream &&
+      event.detail.userid) {
+
+      var element = document.getElementById('video');
+
+      window.attachMediaStream(element, event.detail.stream);
+      element.id = event.detail.userid;
+      element.play();
+    }
+  }, false);
+
+  window.addEventListener('signaler:data-arrived', function onStreamDataArrival(event) {
 
     if (event &&
       event.detail) {
 
       var dataChannelTextElement = document.getElementById('message-on-datachannel');
 
-      dataChannelTextElement.innerHTML = event.detail;
+      dataChannelTextElement.innerHTML = window.JSON.stringify(event.detail);
     }
   }, false);
 
