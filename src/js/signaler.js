@@ -2,7 +2,7 @@
 (function plainOldJs(window) {
   'use strict';
 
-  var Signaler = function Signaler(url) {
+  var Signaler = function Signaler(url, mediaConstr, sdpConstr) {
 
     var comunicator
     , getUserMediaConstraints = {
@@ -34,6 +34,7 @@
     }
     , rtcDataChannelOptions = {}
     , initiators = {}
+    , iceCandidates = {}
     , peerConnections = {}
     , dataChannels = {}
     , myStream
@@ -66,7 +67,7 @@
 
       window.console.error(error);
     }
-    , onAddIceCandidateSuccess = function onAddIceCandidateSuccess(channel, who) {
+    , onAddIceCandidateSuccess = function onAddIceCandidateSuccess(theComunicator, channel, who) {
 
       window.console.info('iceCandidate for', who, 'in', channel, 'successfully added');
     }
@@ -216,47 +217,63 @@
 
         if (event.candidate) {
 
-          theComunicator.sendTo(who, {
-            'type': 'ice-candidate',
-            'channel': channel,
-            'candidate': event.candidate
-          }, true);
+          if (!iceCandidates[channel]) {
+
+            iceCandidates[channel] = {};
+          }
+
+          if (!iceCandidates[channel][who]) {
+
+            iceCandidates[channel][who] = [];
+          }
+          iceCandidates[channel][who].push(event.candidate);
           window.console.trace('generating a candidate');
+        } else if (iceCandidates[channel] &&
+          iceCandidates[channel][who] &&
+          Array.isArray(iceCandidates[channel][who])) {
+          var currentIceCandidates = iceCandidates[channel][who];
+
+          theComunicator.sendTo(who, {
+            'type': 'use-ice-candidates',
+            'channel': channel,
+            'candidates': currentIceCandidates.splice(0, currentIceCandidates.length)
+          }, true);
+          window.console.trace('From', theComunicator.whoAmI(), 'to', who, '-> use candidates', currentIceCandidates.length);
         }
       } else {
 
         window.console.error('channel invalid or event.candidate null');
       }
     }
+    , onSignalingStateChange = function onSignalingStateChange(theComunicator, channel, who, event) {
+
+      if (event &&
+        event.target &&
+        event.target.signalingState) {
+
+        switch (event.target.signalingState) {
+
+          default: {
+
+            window.console.info('signaling state not interesting atm', event.target.signalingState);
+          }
+        }
+      } else {
+
+        window.console.error('signaling state changed without event value');
+      }
+    }
     , onIceConnectionStateChange = function onIceConnectionStateChange(theComunicator, channel, who, event) {
 
-      window.console.debug('Ice state:', event.target.iceConnectionState);
       if (event &&
         event.target &&
         event.target.iceConnectionState) {
 
         switch (event.target.iceConnectionState) {
 
-          case 'checking': {
-
-            theComunicator.sendTo(who, {
-              'type': 'use-ice-candidates',
-              'channel': channel
-            }, true);
-            break;
-          }
-
-          case 'disconnected': {
-
-            theComunicator.sendTo(who, {
-              'type': 'reset-candidates',
-              'channel': channel
-            }, true);
-            break;
-          }
-
           case 'connected':
           case 'completed': {
+
             var domEventToDispatch = new window.CustomEvent('signaler:ready', {
               'detail': {
                 'channel': channel,
@@ -373,7 +390,7 @@
       //, contextifiedLocalStream = audioContext.createMediaStreamDestination();
       if (who) {
 
-        peerConnections[channel][who].addStream(myStream);
+        peerConnections[channel][who].addStream(localStream);
       } else {
 
         var usersInChannel = Object.keys(peerConnections[channel])
@@ -386,7 +403,7 @@
           aUserInChannel = usersInChannel[usersInChannelIndex];
           if (aUserInChannel) {
 
-            peerConnections[channel][aUserInChannel].addStream(myStream);
+            peerConnections[channel][aUserInChannel].addStream(localStream);
           }
         }
       }
@@ -399,7 +416,8 @@
       , onRemoveStreamBoundedToChannel = onRemoveStream.bind(aPeerConnection, channel)
       , onNegotiationNeededBoundedToComunicatorAndChannelAndWho = onNegotiationNeeded.bind(aPeerConnection, theComunicator, channel, who)
       , onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho = onIceConnectionStateChange.bind(aPeerConnection, theComunicator, channel, who)
-      , onDataChannelArriveBoundedToChannelAndWho = onDataChannelArrive.bind(aPeerConnection, channel, who);
+      , onDataChannelArriveBoundedToChannelAndWho = onDataChannelArrive.bind(aPeerConnection, channel, who)
+      , onSignalingStateChangeBoundedToComunicatorAndChannelAndWho = onSignalingStateChange.bind(aPeerConnection, theComunicator, channel, who);
 
       aPeerConnection.onicecandidate = onIceCandidateBoundedToComunicatorAndChannelAndWho;
       aPeerConnection.onaddstream = onAddStreamBoundedToChannel;
@@ -407,6 +425,7 @@
       aPeerConnection.onnegotiationneeded = onNegotiationNeededBoundedToComunicatorAndChannelAndWho;
       aPeerConnection.oniceconnectionstatechange = onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho;
       aPeerConnection.ondatachannel = onDataChannelArriveBoundedToChannelAndWho;
+      aPeerConnection.onsignalingstatechange = onSignalingStateChangeBoundedToComunicatorAndChannelAndWho;
 
       if (!peerConnections[channel]) {
 
@@ -564,8 +583,12 @@
               eventArrived.what.channel &&
               eventArrived.what.offer) {
 
-              initRTCPeerConnection(theComunicator, eventArrived.what.channel, eventArrived.whoami);
-              initiators[eventArrived.what.channel] = eventArrived.whoami;
+              if (!peerConnections[eventArrived.what.channel] ||
+                !peerConnections[eventArrived.what.channel][eventArrived.whoami]) {
+
+                initRTCPeerConnection(theComunicator, eventArrived.what.channel, eventArrived.whoami);
+                initiators[eventArrived.what.channel] = eventArrived.whoami;
+              }
               createAnswer.call(peerConnections[eventArrived.what.channel][eventArrived.whoami],
                 theComunicator,
                 eventArrived.what.channel,
@@ -592,13 +615,13 @@
 
             if (eventArrived.what.candidates) {
               var candidatesIndex = 0
-              , onAddIceCandidateSuccessBoundedToChannelAndWho = onAddIceCandidateSuccess.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], eventArrived.what.channel, eventArrived.whoami);
+              , onAddIceCandidateSuccessBoundedToComunicatorAndChannelAndWho = onAddIceCandidateSuccess.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
 
               for (; candidatesIndex < eventArrived.what.candidates.length; candidatesIndex += 1) {
 
                 peerConnections[eventArrived.what.channel][eventArrived.whoami].addIceCandidate(
                   new window.RTCIceCandidate(eventArrived.what.candidates[candidatesIndex]),
-                  onAddIceCandidateSuccessBoundedToChannelAndWho,
+                  onAddIceCandidateSuccessBoundedToComunicatorAndChannelAndWho,
                   onAddIceCandidateError);
               }
             }
@@ -652,6 +675,21 @@
 
       window.console.error('Missing mandatory <url> parameter or Comunicator (http://github.com/720kb/comunicator) not present.');
     }
+
+    if (mediaConstr) {
+
+      getUserMediaConstraints = mediaConstr;
+    }
+
+    if (sdpConstr) {
+
+      sdpConstraints = sdpConstr;
+    }
+
+    window.getIceCandidates = function getIceCandidates() {
+
+      return iceCandidates;
+    };
 
     return new window.Promise(deferred.bind(this));
   };

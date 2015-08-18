@@ -11,12 +11,12 @@
     , userIdentifierTextElement = document.getElementById('user-identifier')
     , roomIdentifierTextElement = document.getElementById('room-identifier')
     , signaler = new window.Signaler('ws://localhost:9876', {
-        'audio': true,
-        'video': false
+        'audio': false,
+        'video': true
       }, {
         'mandatory': {
-          'OfferToReceiveAudio': true,
-          'OfferToReceiveVideo': false
+          'OfferToReceiveAudio': false,
+          'OfferToReceiveVideo': true
         }
       })
     , userIdentifier;
@@ -132,6 +132,7 @@
   window.addEventListener('signaler:ready', function onStreamReady() {
 
     plugChannelButtonElement.removeAttribute('disabled');
+    window.console.log('ready!');
   }, false);
 
   window.addEventListener('signaler:my-stream', function onMyStreamArrival(event) {
@@ -140,12 +141,9 @@
       event.detail &&
       event.detail.stream &&
       event.detail.userid) {
-
       var element = document.getElementById('video');
 
       window.attachMediaStream(element, event.detail.stream);
-      element.id = event.detail.userid;
-      element.play();
     }
   }, false);
 
@@ -160,7 +158,6 @@
 
       window.attachMediaStream(element, event.detail.stream);
       element.id = event.detail.userid;
-      element.play();
     }
   }, false);
 

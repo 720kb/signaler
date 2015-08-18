@@ -103,37 +103,6 @@
             break;
           }
 
-          case 'ice-candidate': {
-
-            if (messageBody.channel) {
-
-              theChannel = channels[messageBody.channel];
-              theChannel.forEach(function iterator(anElement) {
-
-                if (anElement &&
-                  anElement.user === payload.who) {
-
-                  if (anElement.useDirectlyIceCandidates) {
-
-                    comunicator.sendTo(payload.whoami, payload.who, {
-                      'type': 'take-candidates',
-                      'channel': messageBody.channel,
-                      'candidates': [messageBody.candidate]
-                    });
-                  } else {
-
-                    if (!anElement.iceCandidates) {
-
-                      anElement.iceCandidates = [];
-                    }
-                    anElement.iceCandidates.push(messageBody.candidate);
-                  }
-                }
-              });
-            }
-            break;
-          }
-
           case 'use-ice-candidates': {
 
             theChannel = channels[messageBody.channel];
@@ -142,40 +111,11 @@
               if (anElement &&
                 anElement.user === payload.who) {
 
-                if (anElement.iceCandidates &&
-                anElement.iceCandidates.length > 0) {
-
-                  comunicator.sendTo(payload.whoami, payload.who, {
-                    'type': 'take-candidates',
-                    'channel': messageBody.channel,
-                    'candidates': anElement.iceCandidates.splice(0, anElement.iceCandidates.length)
-                  });
-                } else {
-
-                  anElement.useDirectlyIceCandidates = true;
-                }
-              }
-            });
-            break;
-          }
-
-          case 'reset-candidates': {
-
-            theChannel = channels[messageBody.channel];
-            theChannel.forEach(function iterator(anElement) {
-
-              if (anElement &&
-                anElement.user === payload.who) {
-
-                console.info('\r\nRESET', anElement, '\r\n');
-                if (anElement.iceCandidates &&
-                  anElement.iceCandidates.length > 0) {
-
-                  anElement.iceCandidates.splice(0, anElement.iceCandidates.length);
-                } else {
-
-                  delete anElement.useDirectlyIceCandidates;
-                }
+                comunicator.sendTo(payload.whoami, payload.who, {
+                  'type': 'take-candidates',
+                  'channel': messageBody.channel,
+                  'candidates': messageBody.candidates
+                });
               }
             });
             break;
