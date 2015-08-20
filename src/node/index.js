@@ -1,5 +1,5 @@
-/*global require,module,console,JSON,setInterval*/
-(function withModule(require, module, console, JSON, setInterval) {
+/*global require,module,console,JSON*/
+(function withModule(require, module, console, JSON) {
   'use strict';
 
   var channels = {};
@@ -121,6 +121,33 @@
             break;
           }
 
+          case 'approve': {
+
+            console.log(payload);
+            break;
+          }
+
+          case 'un-approve': {
+
+            console.log(payload);
+            break;
+          }
+
+          case 'leave-channel': {
+
+            theChannel = channels[messageBody.channel];
+            for (var i = theChannel.length - 1; i >= 0; i -= 1) {
+
+              theUser = theChannel[i];
+              if (theUser &&
+                theUser.user === payload.whoami) {
+
+                channels[messageBody.channel].splice(i, 1);
+              }
+            }
+            break;
+          }
+
           default: {
 
             throw 'Message arrived un-manageable ' + JSON.stringify(payload);
@@ -145,13 +172,14 @@
 
               //{ type: 'splice', object: [ [Object], [Object] ], index: 1, removed: [], addedCount: 1 }
               case 'splice': {
+                var theElement
+                , usersInChannelIndex = 0
+                , usersInChannelLength = aChange.object.length
+                , aUserInChannel;
 
                 if (aChange.addedCount > 0) {
-                  var theElement = aChange.object[aChange.index]
-                  , usersInChannelIndex = 0
-                  , usersInChannelLength = aChange.object.length
-                  , aUserInChannel;
 
+                  theElement = aChange.object[aChange.index];
                   if (theElement.role === 'master') {
 
                     for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
@@ -161,10 +189,9 @@
                         aUserInChannel.role === 'slave') {
 
                         comunicator.sendTo(aUserInChannel.user, theElement.user, {
-                          'type': 'master-handshake',
+                          'type': 'do-handshake',
                           'channel': aUserInChannel.channel
                         });
-                        break;
                       }
                     }
                   } else if (theElement.role === 'slave') {
@@ -176,17 +203,44 @@
                         aUserInChannel.role === 'master') {
 
                         comunicator.sendTo(theElement.user, aUserInChannel.user, {
-                          'type': 'master-handshake',
+                          'type': 'do-handshake',
                           'channel': aUserInChannel.channel
                         });
                         break;
                       }
                     }
                   }
-                } else {
+                } else { //initiator is gone
 
-                  //TODO notify the users that he is gone...
-                  console.log('aChange.addedCount === 0');
+                  theElement = aChange.removed[0];
+                  if (theElement.role === 'master') {
+
+                    for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
+
+                      aUserInChannel = aChange.object[usersInChannelIndex];
+                      if (aUserInChannel &&
+                        aUserInChannel.role === 'slave') {
+
+                        comunicator.sendTo(theElement.user, aUserInChannel.user, {
+                          'type': 'initiator-quit',
+                          'channel': aUserInChannel.channel
+                        });
+                      }
+                    }
+                  } else if (theElement.role === 'slave') {
+
+                    for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
+
+                      aUserInChannel = aChange.object[usersInChannelIndex];
+                      if (aUserInChannel) {
+
+                        comunicator.sendTo(theElement.user, aUserInChannel.user, {
+                          'type': 'slave-quit',
+                          'channel': aUserInChannel.channel
+                        });
+                      }
+                    }
+                  }
                 }
                 break;
               }
@@ -270,9 +324,5 @@
     //comunicator.on('comunicator:user-leave', onLeave);
     comunicator.on('comunicator:message-arrived', onComunicatorMessage);
     Object.observe(channels, onChannelsChange);
-    /*setInterval(function logChannels() {
-
-      console.info('\r\nChannels dump', channels, '\r\n');
-    }, 5000);*/
   };
-}(require, module, console, JSON, setInterval));
+}(require, module, console, JSON));

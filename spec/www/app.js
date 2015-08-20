@@ -114,7 +114,7 @@
             if (roomIdentifierTextElement &&
               roomIdentifierTextElement.value) {
 
-              theSignaler.leaveChannel(roomIdentifierTextElement.value);
+              theSignaler.leaveChannel(roomIdentifierTextElement.value, true);
               roomIdentifierTextElement.value = '';
             } else {
 
@@ -141,9 +141,13 @@
       event.detail &&
       event.detail.stream &&
       event.detail.userid) {
-      var element = document.getElementById('video');
+      var newVideoElement = document.createElement('video')
+        , videoParentElement = document.getElementById('video');
 
-      window.attachMediaStream(element, event.detail.stream);
+      window.attachMediaStream(newVideoElement, event.detail.stream);
+      newVideoElement.autoplay = 'true';
+
+      videoParentElement.appendChild(newVideoElement);
     }
   }, false);
 
@@ -153,11 +157,14 @@
       event.detail &&
       event.detail.stream &&
       event.detail.userid) {
+      var newVideoElement = document.createElement('video')
+        , videoParentElement = document.getElementById('video');
 
-      var element = document.getElementById('video');
+      window.attachMediaStream(newVideoElement, event.detail.stream);
+      newVideoElement.id = event.detail.userid;
+      newVideoElement.autoplay = 'true';
 
-      window.attachMediaStream(element, event.detail.stream);
-      element.id = event.detail.userid;
+      videoParentElement.appendChild(newVideoElement);
     }
   }, false);
 

@@ -303,7 +303,6 @@
           , peersConnectedToChannelIndex = 0
           , peersConnectedToChannelLength = peersConnectedToChannel.length
           , aPeerConnectedToChannel
-          , eventToSend
           , domEventToDispatch;
 
         for (; peersConnectedToChannelIndex < peersConnectedToChannelLength; peersConnectedToChannelIndex += 1) {
@@ -311,14 +310,12 @@
           aPeerConnectedToChannel = peersConnectedToChannel[peersConnectedToChannelIndex];
           if (peerConnections[channel][aPeerConnectedToChannel] === this) {
 
-            eventToSend = {
-              'userid': aPeerConnectedToChannel,
-              'stream': event.stream
-            };
             domEventToDispatch = new window.CustomEvent('signaler:stream', {
-              'detail': eventToSend
+              'detail': {
+                'userid': aPeerConnectedToChannel,
+                'stream': event.stream
+              }
             });
-
             window.dispatchEvent(domEventToDispatch);
           }
         }
@@ -335,7 +332,6 @@
           , peersConnectedToChannelIndex = 0
           , peersConnectedToChannelLength = peersConnectedToChannel.length
           , aPeerConnectedToChannel
-          , eventToSend
           , domEventToDispatch;
 
         for (; peersConnectedToChannelIndex < peersConnectedToChannelLength; peersConnectedToChannelIndex += 1) {
@@ -343,11 +339,10 @@
           aPeerConnectedToChannel = peersConnectedToChannel[peersConnectedToChannelIndex];
           if (peerConnections[channel][aPeerConnectedToChannel] === this) {
 
-            eventToSend = {
-              'userid': aPeerConnectedToChannel
-            };
             domEventToDispatch = new window.CustomEvent('signaler:end', {
-              'detail': eventToSend
+              'detail': {
+                'userid': aPeerConnectedToChannel
+              }
             });
             window.dispatchEvent(domEventToDispatch);
           }
@@ -370,18 +365,16 @@
       }
     }
     , onLocalStream = function onLocalStream(theComunicator, channel, who, localStream) {
-      var domEventToDispatch;
 
       if (!myStream) {
-        var eventToSend = {
-          'userid': theComunicator.whoAmI(),
-          'stream': localStream
-        };
+        var domEventToDispatch = new window.CustomEvent('signaler:my-stream', {
+          'detail': {
+            'userid': theComunicator.whoAmI(),
+            'stream': localStream
+          }
+        });
 
         myStream = localStream;
-        domEventToDispatch = new window.CustomEvent('signaler:my-stream', {
-          'detail': eventToSend
-        });
         window.dispatchEvent(domEventToDispatch);
       }
 
@@ -500,7 +493,7 @@
         window.console.error('Missing mandatory field <channel>');
       }
     }
-    , sendData = function sendData(channel, who, payload) {
+    , sendTo = function sendTo(channel, who, payload) {
 
       if (channel &&
         who &&
@@ -540,6 +533,36 @@
         }
       }
     }
+    , approve = function approve(theComunicator, channel, whoToApprove) {
+
+      if (channel &&
+        whoToApprove &&
+        initiators[channel] === theComunicator.whoAmI()) {
+
+        theComunicator.sendTo(whoToApprove, {
+          'type': 'approve',
+          'channel': channel
+        }, true);
+      } else {
+
+        window.console.warn('cause', 'Please review your code');
+      }
+    }
+    , unApprove = function unApprove(theComunicator, channel, whoToUnApprove) {
+
+      if (channel &&
+        whoToUnApprove &&
+        initiators[channel] === theComunicator.whoAmI()) {
+
+        theComunicator.sendTo(whoToUnApprove, {
+          'type': 'un-approve',
+          'channel': channel
+        }, true);
+      } else {
+
+        window.console.warn('cause', 'Please review your code');
+      }
+    }
     , arrivedToMe = function arrivedToMe(theComunicator, event) {
 
       /*{ 'opcode': 'sent', 'whoami': whoami, 'who': who, 'what': what }*/
@@ -553,7 +576,7 @@
 
         switch (eventType) {
 
-          case 'master-handshake': {
+          case 'do-handshake': {
 
             if (eventArrived.whoami &&
               eventArrived.what.channel) {
@@ -628,6 +651,33 @@
             break;
           }
 
+          case 'initiator-quit': {
+
+            /*eslint-disable no-use-before-define*/
+            leaveChannel(theComunicator, eventArrived.what.channel, true);
+            /*eslint-enable no-use-before-define*/
+            break;
+          }
+
+          case 'slave-quit': {
+
+            if (peerConnections[eventArrived.what.channel] &&
+              peerConnections[eventArrived.what.channel][eventArrived.whoami]) {
+
+              peerConnections[eventArrived.what.channel][eventArrived.whoami].close();
+            }
+
+            if (dataChannels[eventArrived.what.channel] &&
+              dataChannels[eventArrived.what.channel][eventArrived.whoami]) {
+
+              dataChannels[eventArrived.what.channel][eventArrived.whoami].close();
+            }
+
+            delete peerConnections[eventArrived.what.channel][eventArrived.whoami];
+            delete dataChannels[eventArrived.what.channel][eventArrived.whoami];
+            break;
+          }
+
           default: {
 
             window.console.error('Event valid but un-manageable. Target:', event.detail);
@@ -638,22 +688,72 @@
         window.console.error('Event arrived is somehow invalid. Target:', event);
       }
     }
+    , leaveChannel = function leaveChannel(theComunicator, channel, keepMyStream) {
+
+      if (channel) {
+
+        var peersInChannel = peerConnections[channel]
+          , peersInChannelNames = Object.keys(peersInChannel)
+          , peersInChannelNamesLength = peersInChannelNames.length
+          , peersInChannelIndex = 0
+          , aPeerInChannelName;
+
+        for (; peersInChannelIndex < peersInChannelNamesLength; peersInChannelIndex += 1) {
+
+          aPeerInChannelName = peersInChannelNames[peersInChannelIndex];
+          if (peerConnections[channel] &&
+            peerConnections[channel][aPeerInChannelName]) {
+
+            peerConnections[channel][aPeerInChannelName].close();
+          }
+
+          if (dataChannels[channel] &&
+            dataChannels[channel][aPeerInChannelName]) {
+
+            dataChannels[channel][aPeerInChannelName].close();
+          }
+        }
+
+        if (!keepMyStream &&
+          myStream) {
+
+          myStream.stop();
+          myStream = undefined;
+        }
+        delete initiators[channel];
+        delete peerConnections[channel];
+        theComunicator.sendTo(unknownPeerValue, {
+          'type': 'leave-channel',
+          'channel': channel
+        }, true);
+        window.removeEventListener('comunicator:to-me', arrivedToMe, false);
+      } else {
+
+        window.console.error('Missing mandatory parameter <channel>');
+      }
+    }
     , onComunicatorResolved = function onComunicatorResolved(resolve, theComunicator) {
 
-      var createChannelBoundToComunicator = createChannel.bind(this, theComunicator)
-      , joinChannelBoundToComunicator = joinChannel.bind(this, theComunicator);
+      var createChannelBoundedToComunicator = createChannel.bind(this, theComunicator)
+      , joinChannelBoundedToComunicator = joinChannel.bind(this, theComunicator)
+      , streamOnChannelBoundedToComunicator = streamOnChannel.bind(this, theComunicator)
+      , sendToBounded = sendTo.bind(this)
+      , broadcastBounded = broadcast.bind(this)
+      , approveBoundedToComunicator = approve.bind(this, theComunicator)
+      , unApproveBoundedToComunicator = unApprove.bind(this, theComunicator)
+      , leaveChannelBoundedToComunicator = leaveChannel.bind(this, theComunicator);
 
       window.addEventListener('comunicator:to-me', arrivedToMe.bind(this, theComunicator), false);
       resolve({
         'userIsPresent': theComunicator.userIsPresent,
-        'createChannel': createChannelBoundToComunicator,
-        'joinChannel': joinChannelBoundToComunicator,
-        'streamOnChannel': streamOnChannel.bind(this, theComunicator),
-        'sendTo': sendData.bind(this),
-        'broadcast': broadcast.bind(this)/*,
-        'approve': approve.bind(this, theComunicator),
-        'unApprove': unApprove.bind(this, theComunicator),
-        'leaveChannel': leaveChannel.bind(this, theComunicator)*/
+        'createChannel': createChannelBoundedToComunicator,
+        'joinChannel': joinChannelBoundedToComunicator,
+        'streamOnChannel': streamOnChannelBoundedToComunicator,
+        'sendTo': sendToBounded,
+        'broadcast': broadcastBounded,
+        'approve': approveBoundedToComunicator,
+        'unApprove': unApproveBoundedToComunicator,
+        'leaveChannel': leaveChannelBoundedToComunicator
       });
     }
     , deferred = function deferred(resolve) {
@@ -685,11 +785,6 @@
 
       sdpConstraints = sdpConstr;
     }
-
-    window.getIceCandidates = function getIceCandidates() {
-
-      return iceCandidates;
-    };
 
     return new window.Promise(deferred.bind(this));
   };
