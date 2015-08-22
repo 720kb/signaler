@@ -123,13 +123,58 @@
 
           case 'approve': {
 
-            console.log(payload);
+            theChannel = channels[messageBody.channel];
+            theChannel.forEach(function iterator(anElement) {
+
+              if (anElement &&
+                anElement.user === payload.who &&
+                !anElement.approved) {
+
+                anElement.approved = true;
+              } else if (anElement.role !== 'master') {
+
+                comunicator.sendTo(payload.who, anElement.user, {
+                  'type': 'approved',
+                  'channel': anElement.channel
+                });
+              }
+            });
             break;
           }
 
           case 'un-approve': {
 
-            console.log(payload);
+            theChannel = channels[messageBody.channel];
+            theChannel.forEach(function iterator(anElement) {
+
+              if (anElement &&
+                anElement.user === payload.who &&
+                anElement.approved) {
+                var usersInChannelExceptApproved = theChannel.filter(function filtering(anElementToFilter) {
+
+                  if (anElementToFilter.user !== payload.who) {
+
+                    return true;
+                  }
+                }).map(function mapping(anElementToMap) {
+
+                  return anElementToMap.user;
+                });
+
+                delete anElement.approved;
+                comunicator.sendTo(payload.whoami, payload.who, {
+                  'type': 'you-are-un-approved',
+                  'channel': anElement.channel,
+                  'users': usersInChannelExceptApproved
+                });
+              } else {
+
+                comunicator.sendTo(payload.who, anElement.user, {
+                  'type': 'un-approved',
+                  'channel': anElement.channel
+                });
+              }
+            });
             break;
           }
 

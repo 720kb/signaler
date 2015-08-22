@@ -6,10 +6,13 @@
     , joinChannelButtonElement = document.getElementById('join-channel')
     , leaveChannelButtonElement = document.getElementById('leave-channel')
     , plugChannelButtonElement = document.getElementById('plug-channel')
+    , approveUserButtonElement = document.getElementById('approve-user')
+    , unApproveUserButtonElement = document.getElementById('un-approve-user')
     , sendOnDataChannelButtonElement = document.getElementById('send-on-datachannel')
     , textToDataChannelTextAreaElement = document.getElementById('text-to-datachannel')
     , userIdentifierTextElement = document.getElementById('user-identifier')
     , roomIdentifierTextElement = document.getElementById('room-identifier')
+    , approveIdentifierTextElement = document.getElementById('approve-identifier')
     , signaler = new window.Signaler('ws://localhost:9876', {
         'audio': false,
         'video': true
@@ -45,26 +48,6 @@
         if (theSignaler) {
 
           theSignaler.userIsPresent(userIdentifier, jsonResponse.token);
-          window.approveUser = function approveUser(whoToApprove) {
-
-            if (roomIdentifierTextElement &&
-              roomIdentifierTextElement.value &&
-              whoToApprove) {
-
-              theSignaler.approve(roomIdentifierTextElement.value, whoToApprove);
-            }
-          };
-
-          window.unApproveUser = function unApproveUser(whoToUnApprove) {
-
-            if (roomIdentifierTextElement &&
-              roomIdentifierTextElement.value &&
-              whoToUnApprove) {
-
-              theSignaler.unApprove(roomIdentifierTextElement.value, whoToUnApprove);
-            }
-          };
-
           createChannelButtonElement.onclick = function onCreateChannelClick() {
 
             if (roomIdentifierTextElement &&
@@ -106,6 +89,28 @@
               theSignaler.broadcast(
                 roomIdentifierTextElement.value,
                 textToDataChannelTextAreaElement.value);
+            }
+          };
+
+          approveUserButtonElement.onclick = function onApproveUserClick() {
+
+            if (roomIdentifierTextElement &&
+              roomIdentifierTextElement.value &&
+              approveIdentifierTextElement &&
+              approveIdentifierTextElement.value) {
+
+              theSignaler.approve(roomIdentifierTextElement.value, approveIdentifierTextElement.value);
+            }
+          };
+
+          unApproveUserButtonElement.onclick = function onUnApproveUserClick() {
+
+            if (roomIdentifierTextElement &&
+              roomIdentifierTextElement.value &&
+              approveIdentifierTextElement &&
+              approveIdentifierTextElement.value) {
+
+              theSignaler.unApprove(roomIdentifierTextElement.value, approveIdentifierTextElement.value);
             }
           };
 

@@ -18,25 +18,20 @@
     , rtcConfiguration = {
       'iceServers': [
         {
-          'url': 'stun:stun.l.google.com:19302'
-        }
-      ]
-    }
-    , rtcOptions = {
-      'optional': [
-        {
-          'DtlsSrtpKeyAgreement': true
+          'urls': 'stun:stun.l.google.com:19302'
         },
         {
-          'RtpDataChannels': true
+          'urls': 'stun:23.21.150.121'
         }
       ]
     }
+    , rtcOptions = {}
     , rtcDataChannelOptions = {}
     , initiators = {}
     , iceCandidates = {}
     , peerConnections = {}
     , dataChannels = {}
+    , approvedUsers = {}
     , myStream
     , unknownPeerValue = 'unknown-peer'
     , onCreateOfferError = function onCreateOfferError(error) {
@@ -78,17 +73,39 @@
         event &&
         event.data) {
 
-        var eventToSend = {
-          'payload': event.data,
-          'whoami': who,
-          'channel': channel
-        }
-        , domEventToDispatch = new window.CustomEvent('signaler:data-arrived', {
-          'detail': eventToSend
-        });
+        if ((typeof event.data === 'string' || event.data instanceof String) &&
+          event.data.indexOf('_signaler') >= 0) {
 
+          switch (event.data) {
+            case '_signaler:got-stream?': {
+
+              if (myStream &&
+                peerConnections[channel] &&
+                peerConnections[channel][who]) {
+
+                peerConnections[channel][who].addStream(myStream);
+              }
+              break;
+            }
+            default: {
+
+              window.console.error('Not interesting event atm');
+            }
+          }
+        } else {
+
+          var eventToSend = {
+            'payload': event.data,
+            'whoami': who,
+            'channel': channel
+          }
+          , domEventToDispatch = new window.CustomEvent('signaler:data-arrived', {
+            'detail': eventToSend
+          });
+
+          window.dispatchEvent(domEventToDispatch);
+        }
         window.console.debug(event.data);
-        window.dispatchEvent(domEventToDispatch);
       } else {
 
         window.console.error('Missing mandatory fields <channel>, <who> or data channel event not valid');
@@ -103,12 +120,12 @@
         'detail': eventToSend
       });
 
-      if (!dataChannels[channel]) {
-
-        dataChannels[channel] = {};
-      }
-
       dataChannels[channel][who] = this;
+      if (approvedUsers[channel] &&
+        approvedUsers[channel].indexOf(who) >= 0) {
+
+        this.send('_signaler:got-stream?');
+      }
       window.dispatchEvent(domEventToDispatch);
       window.console.info('Data channel', this, 'opened...');
     }
@@ -355,13 +372,14 @@
     , onNegotiationNeeded = function onNegotiationNeeded(theComunicator, channel, who) {
 
       if (initiators[channel] === theComunicator.whoAmI() ||
-        myStream) {
+        myStream ||
+        approvedUsers[channel].indexOf(who) >= 0) {
         var onCreateOfferBoundedToComunicatorAndChannelAndWho = onCreateOffer.bind(this, theComunicator, channel, who);
 
         this.createOffer(onCreateOfferBoundedToComunicatorAndChannelAndWho, onCreateOfferError);
       } else {
 
-        window.console.info('You are not the initiator');
+        window.console.info('You can not negotiate a p2p connection');
       }
     }
     , onLocalStream = function onLocalStream(theComunicator, channel, who, localStream) {
@@ -401,24 +419,15 @@
         }
       }
     }
-    , initRTCPeerConnection = function initRTCPeerConnection(theComunicator, channel, who) {
-
-      var aPeerConnection = new window.RTCPeerConnection(rtcConfiguration, rtcOptions)
-      , onIceCandidateBoundedToComunicatorAndChannelAndWho = onIceCandidate.bind(aPeerConnection, theComunicator, channel, who)
-      , onAddStreamBoundedToChannel = onAddStream.bind(aPeerConnection, channel)
-      , onRemoveStreamBoundedToChannel = onRemoveStream.bind(aPeerConnection, channel)
-      , onNegotiationNeededBoundedToComunicatorAndChannelAndWho = onNegotiationNeeded.bind(aPeerConnection, theComunicator, channel, who)
-      , onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho = onIceConnectionStateChange.bind(aPeerConnection, theComunicator, channel, who)
-      , onDataChannelArriveBoundedToChannelAndWho = onDataChannelArrive.bind(aPeerConnection, channel, who)
-      , onSignalingStateChangeBoundedToComunicatorAndChannelAndWho = onSignalingStateChange.bind(aPeerConnection, theComunicator, channel, who);
-
-      aPeerConnection.onicecandidate = onIceCandidateBoundedToComunicatorAndChannelAndWho;
-      aPeerConnection.onaddstream = onAddStreamBoundedToChannel;
-      aPeerConnection.onremovestream = onRemoveStreamBoundedToChannel;
-      aPeerConnection.onnegotiationneeded = onNegotiationNeededBoundedToComunicatorAndChannelAndWho;
-      aPeerConnection.oniceconnectionstatechange = onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho;
-      aPeerConnection.ondatachannel = onDataChannelArriveBoundedToChannelAndWho;
-      aPeerConnection.onsignalingstatechange = onSignalingStateChangeBoundedToComunicatorAndChannelAndWho;
+    , initRTCPeerConnection = function initRTCPeerConnection(theComunicator, channel, who, initChannel) {
+      var aPeerConnection
+      , onIceCandidateBoundedToComunicatorAndChannelAndWho
+      , onAddStreamBoundedToChannel
+      , onRemoveStreamBoundedToChannel
+      , onNegotiationNeededBoundedToComunicatorAndChannelAndWho
+      , onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho
+      , onDataChannelArriveBoundedToChannelAndWho
+      , onSignalingStateChangeBoundedToComunicatorAndChannelAndWho;
 
       if (!peerConnections[channel]) {
 
@@ -430,8 +439,57 @@
         dataChannels[channel] = {};
       }
 
+      if (initChannel) {
+
+        aPeerConnection = new window.RTCPeerConnection(rtcConfiguration, rtcOptions);
+
+        var aDataCannel = aPeerConnection.createDataChannel('signaler-datachannel', rtcDataChannelOptions)
+        , onDataChannelErrorBoundedToChannelAndWho = onDataChannelError.bind(aDataCannel, channel, who)
+        , onDataChannelMessageBoundedToChannelAndWho = onDataChannelMessage.bind(aDataCannel, channel, who)
+        , onDataChannelOpenBoundedToChannelAndWho = onDataChannelOpen.bind(aDataCannel, channel, who)
+        , onDataChannelCloseBoundedToChannelAndWho = onDataChannelClose.bind(aDataCannel, channel, who);
+
+        onIceCandidateBoundedToComunicatorAndChannelAndWho = onIceCandidate.bind(aPeerConnection, theComunicator, channel, who);
+        onAddStreamBoundedToChannel = onAddStream.bind(aPeerConnection, channel);
+        onRemoveStreamBoundedToChannel = onRemoveStream.bind(aPeerConnection, channel);
+        onNegotiationNeededBoundedToComunicatorAndChannelAndWho = onNegotiationNeeded.bind(aPeerConnection, theComunicator, channel, who);
+        onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho = onIceConnectionStateChange.bind(aPeerConnection, theComunicator, channel, who);
+        onDataChannelArriveBoundedToChannelAndWho = onDataChannelArrive.bind(aPeerConnection, channel, who);
+        onSignalingStateChangeBoundedToComunicatorAndChannelAndWho = onSignalingStateChange.bind(aPeerConnection, theComunicator, channel, who);
+
+        aDataCannel.onerror = onDataChannelErrorBoundedToChannelAndWho;
+        aDataCannel.onmessage = onDataChannelMessageBoundedToChannelAndWho;
+        aDataCannel.onopen = onDataChannelOpenBoundedToChannelAndWho;
+        aDataCannel.onclose = onDataChannelCloseBoundedToChannelAndWho;
+
+        aPeerConnection.onicecandidate = onIceCandidateBoundedToComunicatorAndChannelAndWho;
+        aPeerConnection.onaddstream = onAddStreamBoundedToChannel;
+        aPeerConnection.onremovestream = onRemoveStreamBoundedToChannel;
+        aPeerConnection.onnegotiationneeded = onNegotiationNeededBoundedToComunicatorAndChannelAndWho;
+        aPeerConnection.oniceconnectionstatechange = onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho;
+        aPeerConnection.ondatachannel = onDataChannelArriveBoundedToChannelAndWho;
+        aPeerConnection.onsignalingstatechange = onSignalingStateChangeBoundedToComunicatorAndChannelAndWho;
+      } else {
+
+        aPeerConnection = new window.RTCPeerConnection(rtcConfiguration, rtcOptions);
+        onIceCandidateBoundedToComunicatorAndChannelAndWho = onIceCandidate.bind(aPeerConnection, theComunicator, channel, who);
+        onAddStreamBoundedToChannel = onAddStream.bind(aPeerConnection, channel);
+        onRemoveStreamBoundedToChannel = onRemoveStream.bind(aPeerConnection, channel);
+        onNegotiationNeededBoundedToComunicatorAndChannelAndWho = onNegotiationNeeded.bind(aPeerConnection, theComunicator, channel, who);
+        onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho = onIceConnectionStateChange.bind(aPeerConnection, theComunicator, channel, who);
+        onDataChannelArriveBoundedToChannelAndWho = onDataChannelArrive.bind(aPeerConnection, channel, who);
+        onSignalingStateChangeBoundedToComunicatorAndChannelAndWho = onSignalingStateChange.bind(aPeerConnection, theComunicator, channel, who);
+
+        aPeerConnection.onicecandidate = onIceCandidateBoundedToComunicatorAndChannelAndWho;
+        aPeerConnection.onaddstream = onAddStreamBoundedToChannel;
+        aPeerConnection.onremovestream = onRemoveStreamBoundedToChannel;
+        aPeerConnection.onnegotiationneeded = onNegotiationNeededBoundedToComunicatorAndChannelAndWho;
+        aPeerConnection.oniceconnectionstatechange = onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho;
+        aPeerConnection.ondatachannel = onDataChannelArriveBoundedToChannelAndWho;
+        aPeerConnection.onsignalingstatechange = onSignalingStateChangeBoundedToComunicatorAndChannelAndWho;
+      }
+
       peerConnections[channel][who] = aPeerConnection;
-      return aPeerConnection;
     }
     , createChannel = function createChannel(theComunicator, channel) {
 
@@ -539,6 +597,11 @@
         whoToApprove &&
         initiators[channel] === theComunicator.whoAmI()) {
 
+        if (!window.isNaN(whoToApprove)) {
+
+          whoToApprove = Number(whoToApprove);
+        }
+
         theComunicator.sendTo(whoToApprove, {
           'type': 'approve',
           'channel': channel
@@ -553,6 +616,11 @@
       if (channel &&
         whoToUnApprove &&
         initiators[channel] === theComunicator.whoAmI()) {
+
+        if (!window.isNaN(whoToUnApprove)) {
+
+          whoToUnApprove = Number(whoToUnApprove);
+        }
 
         theComunicator.sendTo(whoToUnApprove, {
           'type': 'un-approve',
@@ -582,17 +650,7 @@
               eventArrived.what.channel) {
 
               initiators[eventArrived.what.channel] = eventArrived.who;
-              var thePeerConnection = initRTCPeerConnection(theComunicator, eventArrived.what.channel, eventArrived.whoami)
-              , aDataCannel = thePeerConnection.createDataChannel('signaler-datachannel', rtcDataChannelOptions)
-              , onDataChannelErrorBoundedToChannelAndWho = onDataChannelError.bind(aDataCannel, eventArrived.what.channel, eventArrived.whoami)
-              , onDataChannelMessageBoundedToChannelAndWho = onDataChannelMessage.bind(aDataCannel, eventArrived.what.channel, eventArrived.whoami)
-              , onDataChannelOpenBoundedToChannelAndWho = onDataChannelOpen.bind(aDataCannel, eventArrived.what.channel, eventArrived.whoami)
-              , onDataChannelCloseBoundedToChannelAndWho = onDataChannelClose.bind(aDataCannel, eventArrived.what.channel, eventArrived.whoami);
-
-              aDataCannel.onerror = onDataChannelErrorBoundedToChannelAndWho;
-              aDataCannel.onmessage = onDataChannelMessageBoundedToChannelAndWho;
-              aDataCannel.onopen = onDataChannelOpenBoundedToChannelAndWho;
-              aDataCannel.onclose = onDataChannelCloseBoundedToChannelAndWho;
+              initRTCPeerConnection(theComunicator, eventArrived.what.channel, eventArrived.whoami, true);
             } else {
 
               window.console.error('Missing mandatory fields: <eventArrived.whoami> and <eventArrived.what.channel>');
@@ -678,6 +736,69 @@
             break;
           }
 
+          case 'approved': {
+
+            if (eventArrived.whoami &&
+              eventArrived.what.channel) {
+
+              if (!approvedUsers[eventArrived.what.channel]) {
+
+                approvedUsers[eventArrived.what.channel] = [];
+              }
+              approvedUsers[eventArrived.what.channel].push(eventArrived.whoami);
+              initRTCPeerConnection(theComunicator, eventArrived.what.channel, eventArrived.whoami, true);
+            } else {
+
+              window.console.error('Missing mandatory fields: <eventArrived.whoami> and <eventArrived.what.channel>');
+            }
+            break;
+          }
+
+          case 'un-approved': {
+
+            if (eventArrived.whoami &&
+              eventArrived.what.channel) {
+              var approvedUserIndex = approvedUsers[eventArrived.what.channel].indexOf(eventArrived.whoami);
+
+              if (approvedUserIndex >= 0) {
+
+                approvedUsers.splice(approvedUserIndex, 1);
+                peerConnections[eventArrived.what.channel][eventArrived.whoami].close();
+                dataChannels[eventArrived.what.channel][eventArrived.whoami].close();
+                delete peerConnections[eventArrived.what.channel][eventArrived.whoami];
+                delete dataChannels[eventArrived.what.channel][eventArrived.whoami];
+              }
+            } else {
+
+              window.console.error('Missing mandatory fields: <eventArrived.whoami> and <eventArrived.what.channel>');
+            }
+            break;
+          }
+
+          case 'you-are-un-approved': {
+
+            if (eventArrived.what.channel &&
+              eventArrived.what.users) {
+
+              eventArrived.what.users.forEach(function iterator(anElement) {
+
+                if (peerConnections[eventArrived.what.channel] &&
+                  peerConnections[eventArrived.what.channel][anElement]) {
+
+                  peerConnections[eventArrived.what.channel][anElement].removeStream(myStream);
+                  peerConnections[eventArrived.what.channel][anElement].close();
+                  dataChannels[eventArrived.what.channel][anElement].close();
+                  delete peerConnections[eventArrived.what.channel][anElement];
+                  delete dataChannels[eventArrived.what.channel][anElement];
+                }
+              });
+            } else {
+
+              window.console.error('Missing mandatory field: <eventArrived.what.channel> and <eventArrived.what.users>');
+            }
+            break;
+          }
+
           default: {
 
             window.console.error('Event valid but un-manageable. Target:', event.detail);
@@ -722,6 +843,7 @@
         }
         delete initiators[channel];
         delete peerConnections[channel];
+        delete approvedUsers[channel];
         theComunicator.sendTo(unknownPeerValue, {
           'type': 'leave-channel',
           'channel': channel
@@ -785,6 +907,35 @@
 
       sdpConstraints = sdpConstr;
     }
+
+    /*eslint-disable no-underscore-dangle*/
+    /*jscs:disable disallowDanglingUnderscores*/
+    window._getPeers = function getPeers() {
+
+      return peerConnections;
+    };
+
+    window._getDataChannels = function getDataChannels() {
+
+      return dataChannels;
+    };
+
+    window._getIceCandidates = function getIceCandidates() {
+
+      return iceCandidates;
+    };
+
+    window._getInititators = function getInitiators() {
+
+      return initiators;
+    };
+
+    window._getApprovedUsers = function getApprovedUsers() {
+
+      return approvedUsers;
+    };
+    /*jscs:enable disallowDanglingUnderscores*/
+    /*eslint-enable no-underscore-dangle*/
 
     return new window.Promise(deferred.bind(this));
   };

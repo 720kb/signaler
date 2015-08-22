@@ -18,25 +18,36 @@
       <div class="row blank-text">
         <input type="text" id="room-identifier" placeholder="RoomID"/>
         <input type="text" id="user-identifier" readonly="readonly" placeholder="User Identifier"/>
+        <input type="text" id="approve-identifier" placeholder="Approve or un-approve this user"/>
       </div>
     </p>
     <div class="row center-align">
-      <div class="col s3">
+      <div class="col s2">
         <button id="create-channel" class="btn col m12 blue waves-effect waves-light">
           Create Channel
         </button>
       </div>
-      <div class="col s3">
+      <div class="col s2">
         <button id="join-channel" class="btn col m12 indigo waves-effect waves-light">
           Join Channel
         </button>
       </div>
-      <div class="col s3">
+      <div class="col s2">
         <button id="plug-channel" disabled="disabled" class="btn col m12 grey accent-4 waves-effect waves-light">
           Plug Channel
         </button>
       </div>
-      <div class="col s3">
+      <div class="col s2">
+        <button id="approve-user" class="btn col m12 green waves-effect waves-light">
+          Approve User
+        </button>
+      </div>
+      <div class="col s2">
+        <button id="un-approve-user" class="btn col m12 red waves-effect waves-light">
+          Un-Approve User
+        </button>
+      </div>
+      <div class="col s2">
         <button id="leave-channel" class="btn col m12 pink waves-effect waves-light">
           Leave Channel
         </button>
