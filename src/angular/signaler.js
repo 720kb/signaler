@@ -6,9 +6,9 @@
   .provider('Signaler', function providerFunction() {
 
     var signaler
-      , initSignaler = function initSignaler(urlOrComunicator, getUserMediaConst, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt) {
+      , initSignaler = function initSignaler(urlOrComunicator, getUserMediaConst, sdpConst) {
 
-        signaler = new Signaler(urlOrComunicator, getUserMediaConst, sdpConst, rtcConf, rtcOpt, rtcDataChannelOpt);
+        signaler = new Signaler(urlOrComunicator, getUserMediaConst, sdpConst);
       };
 
     return {
@@ -16,65 +16,126 @@
       '$get': ['$rootScope', '$window', '$log',
       function instantiateProvider($rootScope, $window, $log) {
 
-        var arrivedMyStream = function arrivedMyStream(event) {
+        var onDataArrived = function onDataArrived(event) {
 
-          $rootScope.$apply(function doApply(scope) {
+          if (event &&
+            event.detail) {
 
-            scope.$emit('stream:my-stream', event.detail);
-          });
+            $rootScope.$apply(function doApply(scope) {
 
-          $log.debug('stream:my-stream dispatched');
+              $log.debug('signaler:data-arrived');
+              scope.$emit('signaler:data-arrived', event.detail);
+            });
+          } else {
+
+            $log.error('Missing mandatory event');
+          }
         }
-        , dataChannelOpened = function dataChannelOpened() {
+        , onDataChannelOpened = function onDataChannelOpened(event) {
 
-          $rootScope.$apply(function doApply(scope) {
+          if (event &&
+            event.detail) {
 
-            scope.$emit('stream:datachannel-opened');
-          });
+            $rootScope.$apply(function doApply(scope) {
 
-          $log.debug('stream:datachannel-opened dispatched');
+              $log.debug('signaler:datachannel-opened');
+              scope.$emit('signaler:datachannel-opened', event.detail);
+            });
+          } else {
+
+            $log.error('Missing mandatory event');
+          }
         }
-        , arrivedDataOnDataChannel = function arrivedDataOnDataChannel(event) {
+        , onDataChannelClosed = function onDataChannelClosed(event) {
 
-          $rootScope.$apply(function doApply(scope) {
+          if (event &&
+            event.detail) {
 
-            scope.$emit('stream:data-arrived', event.detail);
-          });
+            $rootScope.$apply(function doApply(scope) {
 
-          $log.debug('stream:data-arrived dispatched');
+              $log.debug('signaler:datachannel-closed');
+              scope.$emit('signaler:datachannel-closed', event.detail);
+            });
+          } else {
+
+            $log.error('Missing mandatory event');
+          }
         }
-        , arrivedStream = function arrivedStream(event) {
+        , onSignalerReady = function onSignalerReady(event) {
 
-          $rootScope.$apply(function doApply(scope) {
+          if (event &&
+            event.detail) {
 
-            scope.$emit('stream:arrive', event.detail);
-          });
+            $rootScope.$apply(function doApply(scope) {
 
-          $log.debug('stream:arrive dispatched');
+              $log.debug('signaler:ready');
+              scope.$emit('signaler:ready', event.detail);
+            });
+          } else {
+
+            $log.error('Missing mandatory event');
+          }
         }
-        , streamEnded = function streamEnded(event) {
+        , onStreamArrive = function onStreamArrive(event) {
 
-          $rootScope.$apply(function doApply(scope) {
+          if (event &&
+            event.detail) {
 
-            scope.$emit('stream:end', event.detail);
-          });
+            $rootScope.$apply(function doApply(scope) {
 
-          $log.debug('stream:end dispatched');
+              scope.$emit('signaler:stream', event.detail);
+            });
+          } else {
+
+            $log.error('Missing mandatory event');
+          }
+        }
+        , onStreamEnd = function onStreamEnd(event) {
+
+          if (event &&
+            event.detail) {
+
+            $rootScope.$apply(function doApply(scope) {
+
+              scope.$emit('signaler:end', event.detail);
+            });
+          } else {
+
+            $log.error('Missing mandatory event');
+          }
+        }
+        , onMyStream = function onMyStream(event) {
+
+          if (event &&
+            event.detail) {
+
+            $rootScope.$apply(function doApply(scope) {
+
+              scope.$emit('signaler:my-stream', event.detail);
+            });
+          } else {
+
+            $log.error('Missing mandatory event');
+          }
         };
 
-        $window.addEventListener('stream:my-stream', arrivedMyStream, false);
-        $window.addEventListener('stream:datachannel-opened', dataChannelOpened, false);
-        $window.addEventListener('stream:data-arrived', arrivedDataOnDataChannel, false);
-        $window.addEventListener('stream:arrive', arrivedStream, false);
-        $window.addEventListener('stream:end', streamEnded, false);
+        $window.addEventListener('signaler:data-arrived', onDataArrived, false);
+        $window.addEventListener('signaler:datachannel-opened', onDataChannelOpened, false);
+        $window.addEventListener('signaler:datachannel-closed', onDataChannelClosed, false);
+        $window.addEventListener('signaler:ready', onSignalerReady, false);
+        $window.addEventListener('signaler:stream', onStreamArrive, false);
+        $window.addEventListener('signaler:end', onStreamEnd, false);
+        $window.addEventListener('signaler:my-stream', onMyStream, false);
 
         $rootScope.$on('$destroy', function unregisterEventListener() {
 
-          $window.removeEventListener('stream:my-stream', arrivedMyStream, false);
-          $window.removeEventListener('stream:datachannel-opened', dataChannelOpened, false);
-          $window.removeEventListener('stream:data-arrived', arrivedDataOnDataChannel, false);
-          $window.removeEventListener('stream:arrive', arrivedStream, false);
-          $window.removeEventListener('stream:end', streamEnded, false);
+          $window.removeEventListener('signaler:data-arrived', onDataArrived, false);
+          $window.removeEventListener('signaler:datachannel-opened', onDataChannelOpened, false);
+          $window.removeEventListener('signaler:datachannel-closed', onDataChannelClosed, false);
+          $window.removeEventListener('signaler:ready', onSignalerReady, false);
+          $window.removeEventListener('signaler:stream', onStreamArrive, false);
+          $window.removeEventListener('signaler:end', onStreamEnd, false);
+          $window.removeEventListener('signaler:my-stream', onMyStream, false);
         });
 
         return signaler;
