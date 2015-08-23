@@ -1,6 +1,6 @@
 {
   "name": "siglr",
-  "version": "2.2.4",
+  "version": "2.3.0",
   "description": "",
   "main": "src/node/index.js",
   "scripts": {
