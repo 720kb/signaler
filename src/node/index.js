@@ -152,7 +152,8 @@
                 anElement.approved) {
                 var usersInChannelExceptApproved = theChannel.filter(function filtering(anElementToFilter) {
 
-                  if (anElementToFilter.user !== payload.who) {
+                  if (anElementToFilter.user !== payload.who &&
+                    anElementToFilter.role !== 'master') {
 
                     return true;
                   }
@@ -167,7 +168,7 @@
                   'channel': anElement.channel,
                   'users': usersInChannelExceptApproved
                 });
-              } else {
+              } else if (anElement.role === 'slave') {
 
                 comunicator.sendTo(payload.who, anElement.user, {
                   'type': 'un-approved',

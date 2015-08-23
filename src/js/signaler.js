@@ -762,7 +762,7 @@
 
               if (approvedUserIndex >= 0) {
 
-                approvedUsers.splice(approvedUserIndex, 1);
+                approvedUsers[eventArrived.what.channel].splice(approvedUserIndex, 1);
                 peerConnections[eventArrived.what.channel][eventArrived.whoami].close();
                 dataChannels[eventArrived.what.channel][eventArrived.whoami].close();
                 delete peerConnections[eventArrived.what.channel][eventArrived.whoami];
