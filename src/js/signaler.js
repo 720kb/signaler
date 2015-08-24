@@ -868,6 +868,7 @@
       window.addEventListener('comunicator:to-me', arrivedToMe.bind(this, theComunicator), false);
       resolve({
         'userIsPresent': theComunicator.userIsPresent,
+        'myStream': myStream,
         'createChannel': createChannelBoundedToComunicator,
         'joinChannel': joinChannelBoundedToComunicator,
         'streamOnChannel': streamOnChannelBoundedToComunicator,
