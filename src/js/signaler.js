@@ -383,9 +383,14 @@
       }
     }
     , onLocalStream = function onLocalStream(theComunicator, channel, who, localStream) {
+      var domEventToDispatch
+      , usersInChannel
+      , usersInChannelIndex
+      , usersInChannelLength
+      , aUserInChannel;
 
       if (!myStream) {
-        var domEventToDispatch = new window.CustomEvent('signaler:my-stream', {
+        domEventToDispatch = new window.CustomEvent('signaler:my-stream', {
           'detail': {
             'userid': theComunicator.whoAmI(),
             'stream': localStream
@@ -404,11 +409,9 @@
         peerConnections[channel][who].addStream(localStream);
       } else {
 
-        var usersInChannel = Object.keys(peerConnections[channel])
-        , usersInChannelIndex = 0
-        , usersInChannelLength = usersInChannel.length
-        , aUserInChannel;
-
+        usersInChannel = Object.keys(peerConnections[channel]);
+        usersInChannelIndex = 0;
+        usersInChannelLength = usersInChannel.length;
         for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
 
           aUserInChannel = usersInChannel[usersInChannelIndex];
@@ -427,7 +430,12 @@
       , onNegotiationNeededBoundedToComunicatorAndChannelAndWho
       , onIceConnectionStateChangeBoundedToComunicatorAndChannelAndWho
       , onDataChannelArriveBoundedToChannelAndWho
-      , onSignalingStateChangeBoundedToComunicatorAndChannelAndWho;
+      , onSignalingStateChangeBoundedToComunicatorAndChannelAndWho
+      , aDataCannel
+      , onDataChannelErrorBoundedToChannelAndWho
+      , onDataChannelMessageBoundedToChannelAndWho
+      , onDataChannelOpenBoundedToChannelAndWho
+      , onDataChannelCloseBoundedToChannelAndWho;
 
       if (!peerConnections[channel]) {
 
@@ -443,11 +451,11 @@
 
         aPeerConnection = new window.RTCPeerConnection(rtcConfiguration, rtcOptions);
 
-        var aDataCannel = aPeerConnection.createDataChannel('signaler-datachannel', rtcDataChannelOptions)
-        , onDataChannelErrorBoundedToChannelAndWho = onDataChannelError.bind(aDataCannel, channel, who)
-        , onDataChannelMessageBoundedToChannelAndWho = onDataChannelMessage.bind(aDataCannel, channel, who)
-        , onDataChannelOpenBoundedToChannelAndWho = onDataChannelOpen.bind(aDataCannel, channel, who)
-        , onDataChannelCloseBoundedToChannelAndWho = onDataChannelClose.bind(aDataCannel, channel, who);
+        aDataCannel = aPeerConnection.createDataChannel('signaler-datachannel', rtcDataChannelOptions);
+        onDataChannelErrorBoundedToChannelAndWho = onDataChannelError.bind(aDataCannel, channel, who);
+        onDataChannelMessageBoundedToChannelAndWho = onDataChannelMessage.bind(aDataCannel, channel, who);
+        onDataChannelOpenBoundedToChannelAndWho = onDataChannelOpen.bind(aDataCannel, channel, who);
+        onDataChannelCloseBoundedToChannelAndWho = onDataChannelClose.bind(aDataCannel, channel, who);
 
         onIceCandidateBoundedToComunicatorAndChannelAndWho = onIceCandidate.bind(aPeerConnection, theComunicator, channel, who);
         onAddStreamBoundedToChannel = onAddStream.bind(aPeerConnection, channel);
@@ -638,9 +646,11 @@
         event.detail &&
         event.detail.what &&
         event.detail.what.type) {
-
         var eventArrived = event.detail
-        , eventType = event.detail.what.type;
+        , eventType = event.detail.what.type
+        , candidatesIndex
+        , onAddIceCandidateSuccessBoundedToComunicatorAndChannelAndWho
+        , approvedUserIndex;
 
         switch (eventType) {
 
@@ -695,9 +705,9 @@
           case 'take-candidates': {
 
             if (eventArrived.what.candidates) {
-              var candidatesIndex = 0
-              , onAddIceCandidateSuccessBoundedToComunicatorAndChannelAndWho = onAddIceCandidateSuccess.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
 
+              candidatesIndex = 0;
+              onAddIceCandidateSuccessBoundedToComunicatorAndChannelAndWho = onAddIceCandidateSuccess.bind(peerConnections[eventArrived.what.channel][eventArrived.whoami], theComunicator, eventArrived.what.channel, eventArrived.whoami);
               for (; candidatesIndex < eventArrived.what.candidates.length; candidatesIndex += 1) {
 
                 peerConnections[eventArrived.what.channel][eventArrived.whoami].addIceCandidate(
@@ -758,8 +768,8 @@
 
             if (eventArrived.whoami &&
               eventArrived.what.channel) {
-              var approvedUserIndex = approvedUsers[eventArrived.what.channel].indexOf(eventArrived.whoami);
 
+              approvedUserIndex = approvedUsers[eventArrived.what.channel].indexOf(eventArrived.whoami);
               if (approvedUserIndex >= 0) {
 
                 approvedUsers[eventArrived.what.channel].splice(approvedUserIndex, 1);
@@ -863,12 +873,10 @@
       , broadcastBounded = broadcast.bind(this)
       , approveBoundedToComunicator = approve.bind(this, theComunicator)
       , unApproveBoundedToComunicator = unApprove.bind(this, theComunicator)
-      , leaveChannelBoundedToComunicator = leaveChannel.bind(this, theComunicator);
-
-      window.addEventListener('comunicator:to-me', arrivedToMe.bind(this, theComunicator), false);
-      resolve({
+      , leaveChannelBoundedToComunicator = leaveChannel.bind(this, theComunicator)
+      , arrivedToMeBoundedToComunicator = arrivedToMe.bind(this, theComunicator)
+      , toResolve = {
         'userIsPresent': theComunicator.userIsPresent,
-        'myStream': myStream,
         'createChannel': createChannelBoundedToComunicator,
         'joinChannel': joinChannelBoundedToComunicator,
         'streamOnChannel': streamOnChannelBoundedToComunicator,
@@ -877,7 +885,19 @@
         'approve': approveBoundedToComunicator,
         'unApprove': unApproveBoundedToComunicator,
         'leaveChannel': leaveChannelBoundedToComunicator
+      };
+
+      Object.defineProperties(toResolve, {
+        'myStream': {
+          'get': function privateKey() {
+
+            return myStream;
+          }
+        }
       });
+
+      window.addEventListener('comunicator:to-me', arrivedToMeBoundedToComunicator, false);
+      resolve(toResolve);
     }
     , deferred = function deferred(resolve) {
 

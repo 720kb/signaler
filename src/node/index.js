@@ -19,7 +19,8 @@
         var messageBody = payload.what
         , messageType = messageBody.type
         , theChannel
-        , theUser;
+        , theUser
+        , theChannelIndex = 0;
 
         switch (messageType) {
 
@@ -182,13 +183,13 @@
           case 'leave-channel': {
 
             theChannel = channels[messageBody.channel];
-            for (var i = theChannel.length - 1; i >= 0; i -= 1) {
+            for (theChannelIndex = theChannel.length - 1; theChannelIndex >= 0; theChannelIndex -= 1) {
 
-              theUser = theChannel[i];
+              theUser = theChannel[theChannelIndex];
               if (theUser &&
                 theUser.user === payload.whoami) {
 
-                channels[messageBody.channel].splice(i, 1);
+                channels[messageBody.channel].splice(theChannelIndex, 1);
               }
             }
             break;
