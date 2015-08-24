@@ -11,7 +11,9 @@
     "debug": "node-debug spec/start-node.js",
     "lint": "eslint -c .eslintrc src && jshint -c .jshintrc --reporter=unix src && jscs -c .jscsrc src",
     "precommit": "npm run-script lint",
-    "preversion": "npm run-script min"
+    "preversion": "npm run-script lint",
+    "version": "npm run-script min && ./tasks/bower-version-bump",
+    "postversion": "git add -A . && git push && git push --tags"
   },
   "files": [
     "src/node/index.js",

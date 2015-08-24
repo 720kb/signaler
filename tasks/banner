@@ -5,17 +5,18 @@
 (function setUp(process, require) {
   'use strict';
 
-  console.info(process.env);
   var infos = require('../package.json')
     , today = new Date()
     , banner = ['/*',
-        ' * ' + infos.name + ' - v' + infos.version,
+        ' * ' + infos.name,
         ' *',
         ' * ' + infos.description,
         ' * ' + infos.homepage,
+        ' * ' + infos.author,
+        ' * ',
         ' * ' + infos.license + ' license',
         ' * ' + today.toISOString(),
-        ' */\n\n'].join('\n');
+        ' */'].join('\n');
 
   process.stdout.write(banner);
 }(process, require));
