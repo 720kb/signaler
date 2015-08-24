@@ -5,6 +5,7 @@
 (function setUp(process, require) {
   'use strict';
 
+  console.info(process.env);
   var infos = require('../package.json')
     , today = new Date()
     , banner = ['/*',
