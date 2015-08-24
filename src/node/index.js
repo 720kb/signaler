@@ -7,6 +7,36 @@
   module.exports = function exportingFunction(saltKey) {
 
     var comunicator = require('comunicator')(saltKey)
+    , onLeave = function onLeave(whoami) {
+
+      var channelNames = Object.keys(channels)
+        , channelNamesLength = channelNames.length
+        , channelNamesIndex = 0
+        , aChannelName
+        , usersInChannel
+        , usersInChannelLength
+        , usersInChannelIndex = 0
+        , aUserInChannel;
+
+      for (; channelNamesIndex < channelNamesLength; channelNamesIndex += 1) {
+
+        aChannelName = channelNames[channelNamesIndex];
+        if (aChannelName) {
+
+          usersInChannel = channels[aChannelName];
+          usersInChannelLength = usersInChannel.length;
+          for (usersInChannelIndex = usersInChannelLength - 1; usersInChannelIndex >= 0; usersInChannelIndex -= 1) {
+
+            aUserInChannel = usersInChannel[usersInChannelIndex];
+            if (aUserInChannel &&
+              aUserInChannel.user === whoami) {
+
+              channels[aChannelName].splice(usersInChannelIndex, 1);
+            }
+          }
+        }
+      }
+    }
     , onComunicatorMessage = function onComunicatorMessage(payload) {
 
       // { 'whoami': parsedMsg.data.whoami, 'who': parsedMsg.data.who, 'what': parsedMsg.data.what }
@@ -368,7 +398,7 @@
       }
     };
 
-    //comunicator.on('comunicator:user-leave', onLeave);
+    comunicator.on('comunicator:user-leave', onLeave);
     comunicator.on('comunicator:message-arrived', onComunicatorMessage);
     Object.observe(channels, onChannelsChange);
   };
