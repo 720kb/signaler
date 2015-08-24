@@ -823,42 +823,47 @@
 
       if (channel) {
 
-        var peersInChannel = peerConnections[channel]
-          , peersInChannelNames = Object.keys(peersInChannel)
-          , peersInChannelNamesLength = peersInChannelNames.length
-          , peersInChannelIndex = 0
-          , aPeerInChannelName;
+        if (peerConnections[channel]) {
+          var peersInChannel = peerConnections[channel]
+            , peersInChannelNames = Object.keys(peersInChannel)
+            , peersInChannelNamesLength = peersInChannelNames.length
+            , peersInChannelIndex = 0
+            , aPeerInChannelName;
 
-        for (; peersInChannelIndex < peersInChannelNamesLength; peersInChannelIndex += 1) {
+          for (; peersInChannelIndex < peersInChannelNamesLength; peersInChannelIndex += 1) {
 
-          aPeerInChannelName = peersInChannelNames[peersInChannelIndex];
-          if (peerConnections[channel] &&
-            peerConnections[channel][aPeerInChannelName]) {
+            aPeerInChannelName = peersInChannelNames[peersInChannelIndex];
+            if (peerConnections[channel] &&
+              peerConnections[channel][aPeerInChannelName]) {
 
-            peerConnections[channel][aPeerInChannelName].close();
+              peerConnections[channel][aPeerInChannelName].close();
+            }
+
+            if (dataChannels[channel] &&
+              dataChannels[channel][aPeerInChannelName]) {
+
+              dataChannels[channel][aPeerInChannelName].close();
+            }
           }
 
-          if (dataChannels[channel] &&
-            dataChannels[channel][aPeerInChannelName]) {
+          if (!keepMyStream &&
+            myStream) {
 
-            dataChannels[channel][aPeerInChannelName].close();
+            myStream.stop();
+            myStream = undefined;
           }
-        }
+          delete initiators[channel];
+          delete peerConnections[channel];
+          delete approvedUsers[channel];
+          theComunicator.sendTo(unknownPeerValue, {
+            'type': 'leave-channel',
+            'channel': channel
+          }, true);
+          window.removeEventListener('comunicator:to-me', arrivedToMe, false);
+        } else {
 
-        if (!keepMyStream &&
-          myStream) {
-
-          myStream.stop();
-          myStream = undefined;
+          window.console.info('No peers in specified channel', channel);
         }
-        delete initiators[channel];
-        delete peerConnections[channel];
-        delete approvedUsers[channel];
-        theComunicator.sendTo(unknownPeerValue, {
-          'type': 'leave-channel',
-          'channel': channel
-        }, true);
-        window.removeEventListener('comunicator:to-me', arrivedToMe, false);
       } else {
 
         window.console.error('Missing mandatory parameter <channel>');

@@ -10,7 +10,8 @@
     "test": "node spec/start-node.js",
     "debug": "node-debug spec/start-node.js",
     "lint": "eslint -c .eslintrc src && jshint -c .jshintrc --reporter=unix src && jscs -c .jscsrc src",
-    "precommit": "npm run-script lint"
+    "precommit": "npm run-script lint",
+    "postversion": "min"
   },
   "files": [
     "src/node/index.js",
