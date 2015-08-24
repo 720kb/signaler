@@ -1,14 +1,16 @@
 #! /usr/bin/env node
 // -*- js -*-
 
-/*global process,require,JSON*/
-(function setUp(process, require, JSON) {
+/*global require,JSON*/
+(function setUp(require, JSON) {
   'use strict';
 
   var npmConf = require('../package.json')
     , bowerConf = require('../bower.json')
-    , fs = require('fs');
+    , fs = require('fs')
+    , newBowerConf;
 
   bowerConf.version = npmConf.version;
-  fs.writeFileSync('../bower.json', JSON.stringify(bowerConf));
-}(process, require, JSON));
+  newBowerConf = JSON.stringify(bowerConf, null, 2);
+  fs.writeFileSync('bower.json', newBowerConf);
+}(require, JSON));
