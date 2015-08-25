@@ -404,7 +404,8 @@
       //TODO try to put the contextified audio
       //audioContext.createMediaStreamSource(myStream);
       //, contextifiedLocalStream = audioContext.createMediaStreamDestination();
-      if (who) {
+      if (who &&
+        peerConnections[channel]) {
 
         peerConnections[channel][who].addStream(localStream);
       } else if (peerConnections[channel]) {
