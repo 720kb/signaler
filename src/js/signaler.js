@@ -733,6 +733,7 @@
               peerConnections[eventArrived.what.channel][eventArrived.whoami]) {
 
               peerConnections[eventArrived.what.channel][eventArrived.whoami].close();
+              delete peerConnections[eventArrived.what.channel][eventArrived.whoami];
             }
 
             if (dataChannels[eventArrived.what.channel] &&
@@ -741,8 +742,6 @@
               dataChannels[eventArrived.what.channel][eventArrived.whoami].close();
             }
 
-            delete peerConnections[eventArrived.what.channel][eventArrived.whoami];
-            delete dataChannels[eventArrived.what.channel][eventArrived.whoami];
             break;
           }
 
