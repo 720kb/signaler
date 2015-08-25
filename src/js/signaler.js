@@ -407,7 +407,7 @@
       if (who) {
 
         peerConnections[channel][who].addStream(localStream);
-      } else {
+      } else if (peerConnections[channel]) {
 
         usersInChannel = Object.keys(peerConnections[channel]);
         usersInChannelIndex = 0;
