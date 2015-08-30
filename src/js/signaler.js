@@ -373,7 +373,7 @@
 
       if (initiators[channel] === theComunicator.whoAmI() ||
         myStream ||
-        approvedUsers[channel].indexOf(who) >= 0) {
+        approvedUsers[channel] && approvedUsers[channel].indexOf(who) >= 0) {
         var onCreateOfferBoundedToComunicatorAndChannelAndWho = onCreateOffer.bind(this, theComunicator, channel, who);
 
         this.createOffer(onCreateOfferBoundedToComunicatorAndChannelAndWho, onCreateOfferError);
