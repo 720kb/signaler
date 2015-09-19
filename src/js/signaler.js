@@ -34,6 +34,7 @@
     , approvedUsers = {}
     , myStream
     , unknownPeerValue = 'unknown-peer'
+    , canStreamOnChannel = false
     , onCreateOfferError = function onCreateOfferError(error) {
 
       window.console.error(error);
@@ -60,6 +61,7 @@
     }
     , onGetUserMediaError = function onGetUserMediaError(error) {
 
+      canStreamOnChannel = true;
       window.console.error(error);
     }
     , onAddIceCandidateSuccess = function onAddIceCandidateSuccess(theComunicator, channel, who) {
@@ -508,6 +510,7 @@
           'type': 'create-channel',
           'channel': channel
         }, true);
+        canStreamOnChannel = true;
       } else {
 
         window.console.error('Missing mandatory <channel> parameter.');
@@ -521,6 +524,7 @@
           'type': 'join-channel',
           'channel': channel
         }, true);
+        canStreamOnChannel = true;
       } else {
 
         window.console.error('Missing mandatory <channel> parameter.');
@@ -528,36 +532,43 @@
     }
     , streamOnChannel = function streamOnChannel(theComunicator, channel, who) {
 
-      if (channel) {
-        var onLocalStreamBoundedToComunicatorAndChannelAndWho;
+      if (canStreamOnChannel) {
 
-        if (initiators[channel] === theComunicator.whoAmI()) {
+        canStreamOnChannel = false;
+        if (channel) {
+          var onLocalStreamBoundedToComunicatorAndChannelAndWho;
 
-          if (who) {
+          if (initiators[channel] === theComunicator.whoAmI()) {
 
-            onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, who);
-          } else { //all
+            if (who) {
 
-            onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, undefined);
+              onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, who);
+            } else { //all
+
+              onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, undefined);
+            }
+          } else {
+
+            onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, initiators[channel]);
+          }
+
+          if (myStream) {
+
+            onLocalStreamBoundedToComunicatorAndChannelAndWho(myStream);
+          } else {
+
+            window.getUserMedia(
+              getUserMediaConstraints,
+              onLocalStreamBoundedToComunicatorAndChannelAndWho,
+              onGetUserMediaError);
           }
         } else {
 
-          onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, initiators[channel]);
-        }
-
-        if (myStream) {
-
-          onLocalStreamBoundedToComunicatorAndChannelAndWho(myStream);
-        } else {
-
-          window.getUserMedia(
-            getUserMediaConstraints,
-            onLocalStreamBoundedToComunicatorAndChannelAndWho,
-            onGetUserMediaError);
+          window.console.error('Missing mandatory field <channel>');
         }
       } else {
 
-        window.console.error('Missing mandatory field <channel>');
+        window.console.warn('You can not call streamOnChannel muliple times');
       }
     }
     , sendTo = function sendTo(channel, who, payload) {
@@ -852,6 +863,7 @@
             myStream.stop();
             myStream = undefined;
           }
+          canStreamOnChannel = false;
           delete initiators[channel];
           delete peerConnections[channel];
           delete approvedUsers[channel];
