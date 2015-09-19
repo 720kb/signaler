@@ -34,7 +34,7 @@
     , approvedUsers = {}
     , myStream
     , unknownPeerValue = 'unknown-peer'
-    , canStreamOnChannel = false
+    , canStreamOnChannel = {}
     , onCreateOfferError = function onCreateOfferError(error) {
 
       window.console.error(error);
@@ -59,9 +59,9 @@
 
       window.console.error(error);
     }
-    , onGetUserMediaError = function onGetUserMediaError(error) {
+    , onGetUserMediaError = function onGetUserMediaError(channel, error) {
 
-      canStreamOnChannel = true;
+      canStreamOnChannel[channel] = true;
       window.console.error(error);
     }
     , onAddIceCandidateSuccess = function onAddIceCandidateSuccess(theComunicator, channel, who) {
@@ -510,7 +510,7 @@
           'type': 'create-channel',
           'channel': channel
         }, true);
-        canStreamOnChannel = true;
+        canStreamOnChannel[channel] = true;
       } else {
 
         window.console.error('Missing mandatory <channel> parameter.');
@@ -524,7 +524,7 @@
           'type': 'join-channel',
           'channel': channel
         }, true);
-        canStreamOnChannel = true;
+        canStreamOnChannel[channel] = true;
       } else {
 
         window.console.error('Missing mandatory <channel> parameter.');
@@ -532,9 +532,9 @@
     }
     , streamOnChannel = function streamOnChannel(theComunicator, channel, who) {
 
-      if (canStreamOnChannel) {
+      if (canStreamOnChannel[channel]) {
 
-        canStreamOnChannel = false;
+        canStreamOnChannel[channel] = false;
         if (channel) {
           var onLocalStreamBoundedToComunicatorAndChannelAndWho;
 
@@ -560,7 +560,7 @@
             window.getUserMedia(
               getUserMediaConstraints,
               onLocalStreamBoundedToComunicatorAndChannelAndWho,
-              onGetUserMediaError);
+              onGetUserMediaError.bind(this, channel));
           }
         } else {
 
@@ -863,7 +863,7 @@
             myStream.stop();
             myStream = undefined;
           }
-          canStreamOnChannel = false;
+          delete canStreamOnChannel[channel];
           delete initiators[channel];
           delete peerConnections[channel];
           delete approvedUsers[channel];
