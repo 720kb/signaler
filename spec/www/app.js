@@ -14,12 +14,12 @@
     , roomIdentifierTextElement = document.getElementById('room-identifier')
     , approveIdentifierTextElement = document.getElementById('approve-identifier')
     , signaler = new window.Signaler('ws://localhost:9876', {
-        'audio': false,
-        'video': true
+        'audio': true,
+        'video': false
       }, {
         'mandatory': {
-          'OfferToReceiveAudio': false,
-          'OfferToReceiveVideo': true
+          'OfferToReceiveAudio': true,
+          'OfferToReceiveVideo': false
         }
       })
     , userIdentifier;
@@ -46,6 +46,25 @@
       signaler.then(function onSignalerReady(theSignaler) {
 
         if (theSignaler) {
+
+          window.addEventListener('signaler:my-stream', function onMyStreamArrival(event) {
+
+            if (event &&
+              event.detail &&
+              event.detail.stream &&
+              event.detail.userid &&
+              roomIdentifierTextElement &&
+              roomIdentifierTextElement.value) {
+              var newVideoElement = document.createElement('video')
+                , videoParentElement = document.getElementById('video');
+
+              window.attachMediaStream(newVideoElement, event.detail.stream);
+              newVideoElement.autoplay = 'true';
+
+              videoParentElement.appendChild(newVideoElement);
+              theSignaler.streamOnChannel(roomIdentifierTextElement.value);
+            }
+          }, false);
 
           theSignaler.userIsPresent(userIdentifier, jsonResponse.token);
           createChannelButtonElement.onclick = function onCreateChannelClick() {
@@ -74,11 +93,7 @@
 
           plugChannelButtonElement.onclick = function onPlugChannelClick() {
 
-            if (roomIdentifierTextElement &&
-              roomIdentifierTextElement.value) {
-
-              theSignaler.streamOnChannel(roomIdentifierTextElement.value);
-            }
+            theSignaler.getUserMedia();
           };
 
           sendOnDataChannelButtonElement.onclick = function onSendOnDataChannel() {
@@ -138,22 +153,6 @@
 
     plugChannelButtonElement.removeAttribute('disabled');
     window.console.log('ready!');
-  }, false);
-
-  window.addEventListener('signaler:my-stream', function onMyStreamArrival(event) {
-
-    if (event &&
-      event.detail &&
-      event.detail.stream &&
-      event.detail.userid) {
-      var newVideoElement = document.createElement('video')
-        , videoParentElement = document.getElementById('video');
-
-      window.attachMediaStream(newVideoElement, event.detail.stream);
-      newVideoElement.autoplay = 'true';
-
-      videoParentElement.appendChild(newVideoElement);
-    }
   }, false);
 
   window.addEventListener('signaler:stream', function onStreamArrival(event) {

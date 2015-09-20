@@ -34,7 +34,6 @@
     , approvedUsers = {}
     , myStream
     , unknownPeerValue = 'unknown-peer'
-    , canStreamOnChannel = {}
     , onCreateOfferError = function onCreateOfferError(error) {
 
       window.console.error(error);
@@ -59,9 +58,8 @@
 
       window.console.error(error);
     }
-    , onGetUserMediaError = function onGetUserMediaError(channel, error) {
+    , onGetUserMediaError = function onGetUserMediaError(error) {
 
-      canStreamOnChannel[channel] = true;
       window.console.error(error);
     }
     , onAddIceCandidateSuccess = function onAddIceCandidateSuccess(theComunicator, channel, who) {
@@ -384,12 +382,8 @@
         window.console.info('You can not negotiate a p2p connection');
       }
     }
-    , onLocalStream = function onLocalStream(theComunicator, channel, who, localStream) {
-      var domEventToDispatch
-      , usersInChannel
-      , usersInChannelIndex
-      , usersInChannelLength
-      , aUserInChannel;
+    , onLocalStream = function onLocalStream(theComunicator, localStream) {
+      var domEventToDispatch;
 
       if (!myStream) {
         domEventToDispatch = new window.CustomEvent('signaler:my-stream', {
@@ -406,24 +400,6 @@
       //TODO try to put the contextified audio
       //audioContext.createMediaStreamSource(myStream);
       //, contextifiedLocalStream = audioContext.createMediaStreamDestination();
-      if (who &&
-        peerConnections[channel]) {
-
-        peerConnections[channel][who].addStream(localStream);
-      } else if (peerConnections[channel]) {
-
-        usersInChannel = Object.keys(peerConnections[channel]);
-        usersInChannelIndex = 0;
-        usersInChannelLength = usersInChannel.length;
-        for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
-
-          aUserInChannel = usersInChannel[usersInChannelIndex];
-          if (aUserInChannel) {
-
-            peerConnections[channel][aUserInChannel].addStream(localStream);
-          }
-        }
-      }
     }
     , initRTCPeerConnection = function initRTCPeerConnection(theComunicator, channel, who, initChannel) {
       var aPeerConnection
@@ -510,7 +486,6 @@
           'type': 'create-channel',
           'channel': channel
         }, true);
-        canStreamOnChannel[channel] = true;
       } else {
 
         window.console.error('Missing mandatory <channel> parameter.');
@@ -524,51 +499,60 @@
           'type': 'join-channel',
           'channel': channel
         }, true);
-        canStreamOnChannel[channel] = true;
       } else {
 
         window.console.error('Missing mandatory <channel> parameter.');
       }
     }
+    , getUserMedia = function getUserMedia(theComunicator) {
+
+      if (theComunicator) {
+        var onLocalStreamBoundedOnComunicator = onLocalStream.bind(this, theComunicator);
+
+        window.getUserMedia(
+          getUserMediaConstraints,
+          onLocalStreamBoundedOnComunicator,
+          onGetUserMediaError);
+      } else {
+
+        window.console.error('theComunicator is not provided');
+      }
+    }
     , streamOnChannel = function streamOnChannel(theComunicator, channel, who) {
 
-      if (canStreamOnChannel[channel]) {
+      if (channel &&
+        myStream) {
 
-        canStreamOnChannel[channel] = false;
-        if (channel) {
-          var onLocalStreamBoundedToComunicatorAndChannelAndWho;
+        if (initiators[channel] === theComunicator.whoAmI()) {
 
-          if (initiators[channel] === theComunicator.whoAmI()) {
+          if (who) {
 
-            if (who) {
+            peerConnections[channel][who].addStream(myStream);
+          } else { //all
+            var usersInChannel = Object.keys(peerConnections[channel])
+              , usersInChannelIndex = 0
+              , usersInChannelLength = usersInChannel.length
+              , aUserInChannel;
 
-              onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, who);
-            } else { //all
+            for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
 
-              onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, undefined);
+              aUserInChannel = usersInChannel[usersInChannelIndex];
+              if (aUserInChannel) {
+
+                peerConnections[channel][aUserInChannel].addStream(myStream);
+              }
             }
-          } else {
-
-            onLocalStreamBoundedToComunicatorAndChannelAndWho = onLocalStream.bind(this, theComunicator, channel, initiators[channel]);
-          }
-
-          if (myStream) {
-
-            onLocalStreamBoundedToComunicatorAndChannelAndWho(myStream);
-          } else {
-
-            window.getUserMedia(
-              getUserMediaConstraints,
-              onLocalStreamBoundedToComunicatorAndChannelAndWho,
-              onGetUserMediaError.bind(this, channel));
           }
         } else {
 
-          window.console.error('Missing mandatory field <channel>');
+          peerConnections[channel][initiators[channel]].addStream(myStream);
         }
+      } else if (myStream) {
+
+        window.console.error('Missing mandatory field <channel>');
       } else {
 
-        window.console.warn('You can not call streamOnChannel muliple times');
+        window.console.error('You must call Signaler.getUserMedia() before streamOnChannel.');
       }
     }
     , sendTo = function sendTo(channel, who, payload) {
@@ -863,7 +847,6 @@
             myStream.stop();
             myStream = undefined;
           }
-          delete canStreamOnChannel[channel];
           delete initiators[channel];
           delete peerConnections[channel];
           delete approvedUsers[channel];
@@ -884,25 +867,27 @@
     , onComunicatorResolved = function onComunicatorResolved(resolve, theComunicator) {
 
       var createChannelBoundedToComunicator = createChannel.bind(this, theComunicator)
-      , joinChannelBoundedToComunicator = joinChannel.bind(this, theComunicator)
-      , streamOnChannelBoundedToComunicator = streamOnChannel.bind(this, theComunicator)
-      , sendToBounded = sendTo.bind(this)
-      , broadcastBounded = broadcast.bind(this)
-      , approveBoundedToComunicator = approve.bind(this, theComunicator)
-      , unApproveBoundedToComunicator = unApprove.bind(this, theComunicator)
-      , leaveChannelBoundedToComunicator = leaveChannel.bind(this, theComunicator)
-      , arrivedToMeBoundedToComunicator = arrivedToMe.bind(this, theComunicator)
-      , toResolve = {
-        'userIsPresent': theComunicator.userIsPresent,
-        'createChannel': createChannelBoundedToComunicator,
-        'joinChannel': joinChannelBoundedToComunicator,
-        'streamOnChannel': streamOnChannelBoundedToComunicator,
-        'sendTo': sendToBounded,
-        'broadcast': broadcastBounded,
-        'approve': approveBoundedToComunicator,
-        'unApprove': unApproveBoundedToComunicator,
-        'leaveChannel': leaveChannelBoundedToComunicator
-      };
+        , joinChannelBoundedToComunicator = joinChannel.bind(this, theComunicator)
+        , getUserMediaBoundedToComunicator = getUserMedia.bind(this, theComunicator)
+        , streamOnChannelBoundedToComunicator = streamOnChannel.bind(this, theComunicator)
+        , sendToBounded = sendTo.bind(this)
+        , broadcastBounded = broadcast.bind(this)
+        , approveBoundedToComunicator = approve.bind(this, theComunicator)
+        , unApproveBoundedToComunicator = unApprove.bind(this, theComunicator)
+        , leaveChannelBoundedToComunicator = leaveChannel.bind(this, theComunicator)
+        , arrivedToMeBoundedToComunicator = arrivedToMe.bind(this, theComunicator)
+        , toResolve = {
+          'userIsPresent': theComunicator.userIsPresent,
+          'createChannel': createChannelBoundedToComunicator,
+          'joinChannel': joinChannelBoundedToComunicator,
+          'getUserMedia': getUserMediaBoundedToComunicator,
+          'streamOnChannel': streamOnChannelBoundedToComunicator,
+          'sendTo': sendToBounded,
+          'broadcast': broadcastBounded,
+          'approve': approveBoundedToComunicator,
+          'unApprove': unApproveBoundedToComunicator,
+          'leaveChannel': leaveChannelBoundedToComunicator
+        };
 
       Object.defineProperties(toResolve, {
         'myStream': {
