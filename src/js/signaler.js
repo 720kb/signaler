@@ -61,6 +61,11 @@
     , onGetUserMediaError = function onGetUserMediaError(error) {
 
       window.console.error(error);
+      var domEventToDispatch = new window.CustomEvent('signaler:usermedia-error', {
+        'detail': error
+      });
+
+      window.dispatchEvent(domEventToDispatch);
     }
     , onAddIceCandidateSuccess = function onAddIceCandidateSuccess(theComunicator, channel, who) {
 

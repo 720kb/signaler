@@ -183,4 +183,13 @@
     }
   }, false);
 
+  window.addEventListener('signaler:usermedia-error', function onUserMediaError(event) {
+
+    if (event &&
+      event.detail) {
+
+      window.console.log(event.detail);
+    }
+  }, false);
+
 }(window, document));
