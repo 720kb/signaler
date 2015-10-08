@@ -16,7 +16,19 @@
       '$get': ['$rootScope', '$window', '$log',
       function instantiateProvider($rootScope, $window, $log) {
 
-        var onGetUserMediaError = function onGetUserMediaError(event) {
+        var onError = function onError(event) {
+
+          if (event &&
+            event.detail) {
+
+            $rootScope.$apply(function doApply(scope) {
+
+              $log.debug('signaler:error');
+              scope.$emit('signaler:error', event.detail);
+            });
+          }
+        }
+        , onGetUserMediaError = function onGetUserMediaError(event) {
 
           if (event &&
             event.detail) {
@@ -131,6 +143,7 @@
           }
         };
 
+        $window.addEventListener('signaler:error', onError, false);
         $window.addEventListener('signaler:usermedia-error', onGetUserMediaError, false);
         $window.addEventListener('signaler:data-arrived', onDataArrived, false);
         $window.addEventListener('signaler:datachannel-opened', onDataChannelOpened, false);
@@ -142,6 +155,7 @@
 
         $rootScope.$on('$destroy', function unregisterEventListener() {
 
+          $window.removeEventListener('signaler:error', onError, false);
           $window.removeEventListener('signaler:usermedia-error', onGetUserMediaError, false);
           $window.removeEventListener('signaler:data-arrived', onDataArrived, false);
           $window.removeEventListener('signaler:datachannel-opened', onDataChannelOpened, false);

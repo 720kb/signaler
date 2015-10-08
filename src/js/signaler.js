@@ -34,29 +34,43 @@
     , approvedUsers = {}
     , myStream
     , unknownPeerValue = 'unknown-peer'
+    , generateError = function generateError(error) {
+
+      var domEventToDispatch = new window.CustomEvent('signaler:error', {
+        'detail': error
+      });
+
+      window.dispatchEvent(domEventToDispatch);
+    }
     , onCreateOfferError = function onCreateOfferError(error) {
 
       window.console.error(error);
+      generateError(error);
     }
     , onSetLocalDescriptionError = function onSetLocalDescriptionError(error) {
 
       window.console.error(error);
+      generateError(error);
     }
     , onDataChannelError = function onDataChannelError(channel, who, error) {
 
       window.console.error(channel, who, error);
+      generateError(error);
     }
     , onSetRemoteDescriptionError = function onSetRemoteDescriptionError(error) {
 
       window.console.error(error);
+      generateError(error);
     }
     , onCreateAnswerError = function onCreateAnswerError(error) {
 
       window.console.error(error);
+      generateError(error);
     }
     , onAddIceCandidateError = function onAddIceCandidateError(error) {
 
       window.console.error(error);
+      generateError(error);
     }
     , onGetUserMediaError = function onGetUserMediaError(error) {
 
