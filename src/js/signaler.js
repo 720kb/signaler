@@ -328,9 +328,7 @@
       }
     }
     , onIceConnectionStateChange = function onIceConnectionStateChange(theComunicator, channel, who, event) {
-
-      var domEventToDispatch
-        , domDisconnectedEventToDispatch;
+      var domEventToDispatch;
 
       if (event &&
         event.target &&
@@ -348,18 +346,6 @@
               }
             });
             window.dispatchEvent(domEventToDispatch);
-            break;
-          }
-
-          case 'disconnected': {
-
-            domDisconnectedEventToDispatch = new window.CustomEvent('signaler:disconnected', {
-              'detail': {
-                'whoami': who,
-                'channel': channel
-              }
-            });
-            window.dispatchEvent(domDisconnectedEventToDispatch);
             break;
           }
 

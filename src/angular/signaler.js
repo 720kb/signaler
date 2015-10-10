@@ -6,9 +6,9 @@
   .provider('Signaler', function providerFunction() {
 
     var signaler
-      , initSignaler = function initSignaler(urlOrComunicator, getUserMediaConst, sdpConst) {
+      , initSignaler = function initSignaler(urlOrComunicator, getUserMediaConst, sdpConst, debug) {
 
-        signaler = new Signaler(urlOrComunicator, getUserMediaConst, sdpConst);
+        signaler = new Signaler(urlOrComunicator, getUserMediaConst, sdpConst, debug);
       };
 
     return {
@@ -16,19 +16,7 @@
       '$get': ['$rootScope', '$window', '$log',
       function instantiateProvider($rootScope, $window, $log) {
 
-        var onDisconnection = function onDisconnection(event) {
-
-          if (event &&
-            event.detail) {
-
-            $rootScope.$apply(function doApply() {
-
-              $log.debug('signaler:disconnected');
-              $rootScope.$emit('signaler:disconnected', event.detail);
-            });
-          }
-        }
-        , onError = function onError(event) {
+        var onError = function onError(event) {
 
           if (event &&
             event.detail) {
@@ -164,7 +152,6 @@
         $window.addEventListener('signaler:stream', onStreamArrive, false);
         $window.addEventListener('signaler:end', onStreamEnd, false);
         $window.addEventListener('signaler:my-stream', onMyStream, false);
-        $window.addEventListener('signaler:disconnected', onDisconnection, false);
 
         $rootScope.$on('$destroy', function unregisterEventListener() {
 
@@ -177,7 +164,6 @@
           $window.removeEventListener('signaler:stream', onStreamArrive, false);
           $window.removeEventListener('signaler:end', onStreamEnd, false);
           $window.removeEventListener('signaler:my-stream', onMyStream, false);
-          $window.removeEventListener('signaler:disconnected', onDisconnection, false);
         });
 
         return signaler;
