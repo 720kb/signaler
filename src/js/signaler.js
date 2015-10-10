@@ -2,9 +2,10 @@
 (function plainOldJs(window) {
   'use strict';
 
-  var Signaler = function Signaler(url, mediaConstr, sdpConstr) {
+  var Signaler = function Signaler(url, mediaConstr, sdpConstr, debug) {
 
     var comunicator
+    , debugMode
     , getUserMediaConstraints = {
       'audio': true,
       'video': true
@@ -83,7 +84,10 @@
     }
     , onAddIceCandidateSuccess = function onAddIceCandidateSuccess(theComunicator, channel, who) {
 
-      window.console.info('iceCandidate for', who, 'in', channel, 'successfully added');
+      if (debugMode) {
+
+        window.console.info('iceCandidate for', who, 'in', channel, 'successfully added');
+      }
     }
     , onDataChannelMessage = function onDataChannelMessage(channel, who, event) {
 
@@ -124,7 +128,10 @@
 
           window.dispatchEvent(domEventToDispatch);
         }
-        window.console.debug(event.data);
+        if (debugMode) {
+
+          window.console.debug(event.data);
+        }
       } else {
 
         window.console.error('Missing mandatory fields <channel>, <who> or data channel event not valid');
@@ -146,7 +153,10 @@
         this.send('_signaler:got-stream?');
       }
       window.dispatchEvent(domEventToDispatch);
-      window.console.info('Data channel', this, 'opened...');
+      if (debugMode) {
+
+        window.console.info('Data channel', this, 'opened...');
+      }
     }
     , onDataChannelClose = function onDataChannelClose(channel, who) {
       var eventToSend = {
@@ -162,9 +172,11 @@
 
         delete dataChannels[channel];
       }
-
       window.dispatchEvent(domEventToDispatch);
-      window.console.info('Data channel', this, 'closed.');
+      if (debugMode) {
+
+        window.console.info('Data channel', this, 'closed.');
+      }
     }
     , onDataChannelArrive = function onDataChannelArrive(channel, who, event) {
 
@@ -189,7 +201,10 @@
     }
     , onSetLocalDescriptionSuccess = function onSetLocalDescriptionSuccess(theComunicator, who, channel, payload, type) {
 
-      window.console.debug('Set local description', type);
+      if (debugMode) {
+
+        window.console.debug('Set local description', type);
+      }
       if (type && (type === 'offer' ||
         type === 'answer')) {
         var toSend = {
@@ -211,7 +226,10 @@
     }
     , onSetRemoteDescription = function onSetRemoteDescription(theComunicator, channel, who, role) {
 
-      window.console.debug('Set remote description', role);
+      if (debugMode) {
+
+        window.console.debug('Set remote description', role);
+      }
       if (role &&
         role === 'slave') {
 
@@ -219,7 +237,8 @@
 
         this.createAnswer(onAnswerBoundedToComunicatorAndChannelAndWho, onCreateAnswerError, sdpConstraints);
       } else if (role &&
-        role === 'master') {
+        role === 'master' &&
+        debugMode) {
 
         window.console.info('handshake finished');
       }
@@ -263,7 +282,10 @@
             iceCandidates[channel][who] = [];
           }
           iceCandidates[channel][who].push(event.candidate);
-          window.console.trace('generating a candidate');
+          if (debugMode) {
+
+            window.console.trace('generating a candidate');
+          }
         } else if (iceCandidates[channel] &&
           iceCandidates[channel][who] &&
           Array.isArray(iceCandidates[channel][who])) {
@@ -274,7 +296,10 @@
             'channel': channel,
             'candidates': currentIceCandidates.splice(0, currentIceCandidates.length)
           }, true);
-          window.console.trace('From', theComunicator.whoAmI(), 'to', who, '-> use candidates', currentIceCandidates.length);
+          if (debugMode) {
+
+            window.console.trace('From', theComunicator.whoAmI(), 'to', who, '-> use candidates', currentIceCandidates.length);
+          }
         }
       } else {
 
@@ -291,7 +316,10 @@
 
           default: {
 
-            window.console.info('signaling state not interesting atm', event.target.signalingState);
+            if (debugMode) {
+
+              window.console.info('signaling state not interesting atm', event.target.signalingState);
+            }
           }
         }
       } else {
@@ -300,6 +328,9 @@
       }
     }
     , onIceConnectionStateChange = function onIceConnectionStateChange(theComunicator, channel, who, event) {
+
+      var domEventToDispatch
+        , domDisconnectedEventToDispatch;
 
       if (event &&
         event.target &&
@@ -310,20 +341,34 @@
           case 'connected':
           case 'completed': {
 
-            var domEventToDispatch = new window.CustomEvent('signaler:ready', {
+            domEventToDispatch = new window.CustomEvent('signaler:ready', {
               'detail': {
                 'channel': channel,
                 'whoami': who
               }
             });
-
             window.dispatchEvent(domEventToDispatch);
             break;
           }
 
-          default:{
+          case 'disconnected': {
 
-            window.console.info('ice state not interesting atm.', event.target.iceConnectionState);
+            domDisconnectedEventToDispatch = new window.CustomEvent('signaler:disconnected', {
+              'detail': {
+                'whoami': who,
+                'channel': channel
+              }
+            });
+            window.dispatchEvent(domDisconnectedEventToDispatch);
+            break;
+          }
+
+          default: {
+
+            if (debugMode) {
+
+              window.console.info('ice state not interesting atm.', event.target.iceConnectionState);
+            }
           }
         }
       } else {
@@ -396,7 +441,7 @@
         var onCreateOfferBoundedToComunicatorAndChannelAndWho = onCreateOffer.bind(this, theComunicator, channel, who);
 
         this.createOffer(onCreateOfferBoundedToComunicatorAndChannelAndWho, onCreateOfferError);
-      } else {
+      } else if (debugMode) {
 
         window.console.info('You can not negotiate a p2p connection');
       }
@@ -874,7 +919,7 @@
             'channel': channel
           }, true);
           window.removeEventListener('comunicator:to-me', arrivedToMe, false);
-        } else {
+        } else if (debugMode) {
 
           window.console.info('No peers in specified channel', channel);
         }
@@ -948,6 +993,14 @@
     if (sdpConstr) {
 
       sdpConstraints = sdpConstr;
+    }
+
+    if (debug) {
+
+      debugMode = debug;
+    } else {
+
+      debugMode = false;
     }
 
     /*eslint-disable no-underscore-dangle*/
