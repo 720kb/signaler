@@ -4,9 +4,9 @@
 
   var channels = {};
 
-  module.exports = function exportingFunction(saltKey) {
+  module.exports = function exportingFunction(websocketConfs, saltKey) {
 
-    var comunicator = require('comunicator')(saltKey)
+    var comunicator = require('comunicator')(websocketConfs, saltKey)
     , onLeave = function onLeave(whoami) {
 
       var channelNames = Object.keys(channels)

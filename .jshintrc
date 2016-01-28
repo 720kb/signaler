@@ -7,7 +7,7 @@
   "forin": true,
   "freeze": true,
   "futurehostile": true,
-  "latedef": true,
+  "latedef": false,
   "noarg": true,
   "nocomma": true,
   "nonbsp": true,
