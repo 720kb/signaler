@@ -1,1 +1,0 @@
-../../node_modules/webrtc-adapter-test/adapter.js

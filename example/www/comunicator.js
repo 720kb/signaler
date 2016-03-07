@@ -1,0 +1,1 @@
+../../bower_components/comunicator/dist/frontend/comunicator.js

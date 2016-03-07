@@ -16,5 +16,9 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "webrtc-adapter": "~1.0.2",
+    "comunicator": "^3.1.0"
+  }
 }

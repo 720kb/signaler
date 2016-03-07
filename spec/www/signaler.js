@@ -1,1 +1,0 @@
-../../src/js/signaler.js

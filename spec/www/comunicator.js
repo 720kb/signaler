@@ -1,1 +1,0 @@
-../../node_modules/comunicator/src/js/comunicator.js
