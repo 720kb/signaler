@@ -1,21 +1,8 @@
 'use strict';
 
-/**
-* siglr
-* 3.0.7
-*
-* 
-* https://github.com/720kb/signaler
-*
-* MIT license
-* Sun Mar 06 2016
-*/
-/*global module,require,console*/
+/*global module,process,require*/
 
-var signalerState = {
-  'channels': {}
-},
-    channelObserver = require('./channels')(signalerState);
+var ObservableState = require('./observable-state');
 
 module.exports = function (comunicator) {
 
@@ -23,11 +10,9 @@ module.exports = function (comunicator) {
 
     throw new Error('Comunicator object missing');
   }
+  var signalerState = new ObservableState();
 
-  channelObserver.forEach(function (element) {
-
-    console.info(element);
-  });
+  signalerState.forEach(console.info);
 
   comunicator.filter(function (element) {
     return element.type === 'message-arrived';
@@ -36,11 +21,8 @@ module.exports = function (comunicator) {
     // { 'whoami': parsedMsg.data.whoami, 'who': parsedMsg.data.who, 'what': parsedMsg.data.what }
     if (element && element.whoami && element.who && element.what && element.what.type) {
       (function () {
-
         var messageBody = element.what,
             messageType = messageBody.type;
-        var theChannel = undefined,
-            theUser = undefined;
 
         switch (messageType) {
 
@@ -48,19 +30,25 @@ module.exports = function (comunicator) {
             {
 
               if (messageBody.channel) {
+                var _theChannel = messageBody.channel,
+                    _theUser = element.whoami;
 
-                theChannel = messageBody.channel;
-                theUser = element.whoami;
-                if (!signalerState.channels[theChannel]) {
+                if (!signalerState.containsInState(_theChannel)) {
 
-                  signalerState.channels[theChannel] = [];
+                  signalerState.addChannelInState(_theChannel);
+                } else if (signalerState.getChannelInState(_theChannel).master && signalerState.getChannelInState(_theChannel).master.user !== _theUser) {
+
+                  process.nextTick(function () {
+
+                    throw new Error('There is already a master user for this channel');
+                  });
                 }
 
-                signalerState.channels[theChannel].push({
-                  'user': theUser,
+                signalerState.getChannelInState(_theChannel).master = {
+                  'user': _theUser,
                   'role': 'master',
-                  'channel': theChannel
-                });
+                  'channel': _theChannel
+                };
               } else {
 
                 throw new Error('Missing mandatory <channel> value');
@@ -72,19 +60,27 @@ module.exports = function (comunicator) {
             {
 
               if (messageBody.channel) {
+                (function () {
+                  var theChannel = messageBody.channel,
+                      theUser = element.whoami;
 
-                theChannel = messageBody.channel;
-                theUser = element.whoami;
-                if (!signalerState.channels[theChannel]) {
+                  if (!signalerState.containsInState[theChannel]) {
 
-                  signalerState.channels[theChannel] = [];
-                }
+                    signalerState.addChannelInState[theChannel] = [];
+                  } else if (signalerState.getChannelInState(theChannel).master && signalerState.getChannelInState(theChannel).master.user === theUser) {
 
-                signalerState.channels[theChannel].push({
-                  'user': theUser,
-                  'role': 'slave',
-                  'channel': theChannel
-                });
+                    process.nextTick(function () {
+
+                      throw new Error('The user ' + theUser + ' can be either master or slave');
+                    });
+                  }
+
+                  signalerState.getChannelInState(theChannel)[theUser] = {
+                    'user': theUser,
+                    'role': 'slave',
+                    'channel': theChannel
+                  };
+                })();
               } else {
 
                 throw new Error('Missing mandatory <channel> value');
@@ -249,172 +245,4 @@ module.exports = function (comunicator) {
     }*/
   });
 };
-
-/*
-
-var onChannelChange = function onChannelChange(changes) {
-
-  if (changes) {
-
-    changes.forEach(function iterator(aChange) {
-
-      if (aChange &&
-        aChange.type &&
-        aChange.object) {
-
-        switch (aChange.type) {
-
-          //{ type: 'splice', object: [ [Object], [Object] ], index: 1, removed: [], addedCount: 1 }
-          case 'splice': {
-            var theElement
-            , usersInChannelIndex = 0
-            , usersInChannelLength = aChange.object.length
-            , aUserInChannel;
-
-            if (aChange.addedCount > 0) {
-
-              theElement = aChange.object[aChange.index];
-              if (theElement.role === 'master') {
-
-                for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
-
-                  aUserInChannel = aChange.object[usersInChannelIndex];
-                  if (aUserInChannel &&
-                    aUserInChannel.role === 'slave') {
-
-                    comunicator.sendTo(aUserInChannel.user, theElement.user, {
-                      'type': 'do-handshake',
-                      'channel': aUserInChannel.channel
-                    });
-                  }
-                }
-              } else if (theElement.role === 'slave') {
-
-                for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
-
-                  aUserInChannel = aChange.object[usersInChannelIndex];
-                  if (aUserInChannel &&
-                    aUserInChannel.role === 'master') {
-
-                    comunicator.sendTo(theElement.user, aUserInChannel.user, {
-                      'type': 'do-handshake',
-                      'channel': aUserInChannel.channel
-                    });
-                    break;
-                  }
-                }
-              }
-            } else { //initiator is gone
-
-              theElement = aChange.removed[0];
-              if (theElement.role === 'master') {
-
-                for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
-
-                  aUserInChannel = aChange.object[usersInChannelIndex];
-                  if (aUserInChannel &&
-                    aUserInChannel.role === 'slave') {
-
-                    comunicator.sendTo(theElement.user, aUserInChannel.user, {
-                      'type': 'initiator-quit',
-                      'channel': aUserInChannel.channel
-                    });
-                  }
-                }
-              } else if (theElement.role === 'slave') {
-
-                for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
-
-                  aUserInChannel = aChange.object[usersInChannelIndex];
-                  if (aUserInChannel) {
-
-                    comunicator.sendTo(theElement.user, aUserInChannel.user, {
-                      'type': 'slave-quit',
-                      'channel': aUserInChannel.channel
-                    });
-                  }
-                }
-              }
-            }
-            break;
-          }
-
-          //{ type: 'update', object: [ 33, 2, 3 ], name: '0', oldValue: 1 }
-          case 'update': {
-
-            console.log(aChange);
-            break;
-          }
-
-          default: {
-
-            throw 'Un-managed observable type ' + JSON.stringify(aChange);
-          }
-        }
-      } else {
-
-        throw 'Observable object structure is changed ' + JSON.stringify(aChange);
-      }
-    });
-  } else {
-
-    throw 'No changes but observe is launched';
-  }
-}
-, onChannelsChange = function onChannelsChange(changes) {
-
-  if (changes) {
-
-    changes.forEach(function iterator(aChange) {
-
-      if (aChange &&
-        aChange.type &&
-        aChange.object &&
-        aChange.name) {
-
-        switch (aChange.type) {
-
-          case 'add': {
-
-            Array.observe(aChange.object[aChange.name], onChannelChange);
-            break;
-          }
-
-          case 'update': {
-
-            if (aChange.oldValue) {
-
-              Array.unobserve(aChange.oldValue[aChange.name], onChannelChange);
-            }
-
-            Array.observe(aChange.object[aChange.name], onChannelChange);
-            break;
-          }
-
-          case 'delete': {
-
-            if (aChange.oldValue) {
-
-              Array.unobserve(aChange.oldValue[aChange.name], onChannelChange);
-            }
-            break;
-          }
-          default: {
-
-            throw 'Un-managed observable type ' + JSON.stringify(aChange);
-          }
-        }
-      } else {
-
-        throw 'Observable object structure is changed ' + JSON.stringify(aChange);
-      }
-    });
-  } else {
-
-    throw 'No changes but observe is launched';
-  }
-};
-
-Object.observe(channels, onChannelsChange);
-*/
 //# sourceMappingURL=index.js.map

@@ -1,0 +1,168 @@
+
+/*
+
+var onChannelChange = function onChannelChange(changes) {
+
+  if (changes) {
+
+    changes.forEach(function iterator(aChange) {
+
+      if (aChange &&
+        aChange.type &&
+        aChange.object) {
+
+        switch (aChange.type) {
+
+          //{ type: 'splice', object: [ [Object], [Object] ], index: 1, removed: [], addedCount: 1 }
+          case 'splice': {
+            var theElement
+            , usersInChannelIndex = 0
+            , usersInChannelLength = aChange.object.length
+            , aUserInChannel;
+
+            if (aChange.addedCount > 0) {
+
+              theElement = aChange.object[aChange.index];
+              if (theElement.role === 'master') {
+
+                for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
+
+                  aUserInChannel = aChange.object[usersInChannelIndex];
+                  if (aUserInChannel &&
+                    aUserInChannel.role === 'slave') {
+
+                    comunicator.sendTo(aUserInChannel.user, theElement.user, {
+                      'type': 'do-handshake',
+                      'channel': aUserInChannel.channel
+                    });
+                  }
+                }
+              } else if (theElement.role === 'slave') {
+
+                for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
+
+                  aUserInChannel = aChange.object[usersInChannelIndex];
+                  if (aUserInChannel &&
+                    aUserInChannel.role === 'master') {
+
+                    comunicator.sendTo(theElement.user, aUserInChannel.user, {
+                      'type': 'do-handshake',
+                      'channel': aUserInChannel.channel
+                    });
+                    break;
+                  }
+                }
+              }
+            } else { //initiator is gone
+
+              theElement = aChange.removed[0];
+              if (theElement.role === 'master') {
+
+                for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
+
+                  aUserInChannel = aChange.object[usersInChannelIndex];
+                  if (aUserInChannel &&
+                    aUserInChannel.role === 'slave') {
+
+                    comunicator.sendTo(theElement.user, aUserInChannel.user, {
+                      'type': 'initiator-quit',
+                      'channel': aUserInChannel.channel
+                    });
+                  }
+                }
+              } else if (theElement.role === 'slave') {
+
+                for (; usersInChannelIndex < usersInChannelLength; usersInChannelIndex += 1) {
+
+                  aUserInChannel = aChange.object[usersInChannelIndex];
+                  if (aUserInChannel) {
+
+                    comunicator.sendTo(theElement.user, aUserInChannel.user, {
+                      'type': 'slave-quit',
+                      'channel': aUserInChannel.channel
+                    });
+                  }
+                }
+              }
+            }
+            break;
+          }
+
+          //{ type: 'update', object: [ 33, 2, 3 ], name: '0', oldValue: 1 }
+          case 'update': {
+
+            console.log(aChange);
+            break;
+          }
+
+          default: {
+
+            throw 'Un-managed observable type ' + JSON.stringify(aChange);
+          }
+        }
+      } else {
+
+        throw 'Observable object structure is changed ' + JSON.stringify(aChange);
+      }
+    });
+  } else {
+
+    throw 'No changes but observe is launched';
+  }
+}
+, onChannelsChange = function onChannelsChange(changes) {
+
+  if (changes) {
+
+    changes.forEach(function iterator(aChange) {
+
+      if (aChange &&
+        aChange.type &&
+        aChange.object &&
+        aChange.name) {
+
+        switch (aChange.type) {
+
+          case 'add': {
+
+            Array.observe(aChange.object[aChange.name], onChannelChange);
+            break;
+          }
+
+          case 'update': {
+
+            if (aChange.oldValue) {
+
+              Array.unobserve(aChange.oldValue[aChange.name], onChannelChange);
+            }
+
+            Array.observe(aChange.object[aChange.name], onChannelChange);
+            break;
+          }
+
+          case 'delete': {
+
+            if (aChange.oldValue) {
+
+              Array.unobserve(aChange.oldValue[aChange.name], onChannelChange);
+            }
+            break;
+          }
+          default: {
+
+            throw 'Un-managed observable type ' + JSON.stringify(aChange);
+          }
+        }
+      } else {
+
+        throw 'Observable object structure is changed ' + JSON.stringify(aChange);
+      }
+    });
+  } else {
+
+    throw 'No changes but observe is launched';
+  }
+};
+
+Object.observe(channels, onChannelsChange);
+*/

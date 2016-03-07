@@ -5,7 +5,6 @@
   const gulp = require('gulp')
     , runSequence = require('run-sequence')
     , plumber = require('gulp-plumber')
-    , header = require('gulp-header')
     , rollup = require('rollup').rollup
     , rollupBabel = require('rollup-plugin-babel')
     , rollupUglify = require('rollup-plugin-uglify')
@@ -23,7 +22,6 @@
 
     return gulp.src(`${paths.lib}node/**/*.js`)
       .pipe(plumber())
-      .pipe(header(paths.banner))
       .pipe(sourcemaps.init())
       .pipe(babel({
         'presets': [
@@ -38,7 +36,7 @@
   gulp.task('es6-build-frontend', () => {
     const toProcess = [
       rollup({
-        'entry': `${paths.lib}frontend/p2p-manager.js`,
+        'entry': `${paths.lib}frontend/signaler.js`,
         'plugins': [
           rollupBabel({
             'presets': [
@@ -47,7 +45,7 @@
           })
         ]
       }),
-      /*rollup({
+      rollup({
         'entry': `${paths.lib}frontend/angular-signaler.js`,
         'plugins': [
           rollupBabel({
@@ -78,7 +76,7 @@
           }),
           rollupUglify()
         ]
-      })*/
+      })
     ];
 
     return Promise.all(toProcess).then(bundles => {
@@ -95,7 +93,7 @@
           'dest': `${paths.tmp}frontend/signaler.js`
         });
 
-        /*bundles[1].write({
+        bundles[1].write({
           'format': 'umd',
           'banner': paths.banner,
           'moduleId': 'angular-signaler',
@@ -120,7 +118,7 @@
           'moduleName': 'angular-signaler',
           'sourceMap': true,
           'dest': `${paths.tmp}frontend/angular-signaler-min.js`
-        });*/
+        });
       }
     });
   });

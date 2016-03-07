@@ -1,8 +1,8 @@
 /*globals window,document*/
-(function plainOldJs(window, document) {
+(function plainOldJs() {
   'use strict';
 
-  var createChannelButtonElement = document.getElementById('create-channel')
+  const createChannelButtonElement = document.getElementById('create-channel')
     , joinChannelButtonElement = document.getElementById('join-channel')
     , leaveChannelButtonElement = document.getElementById('leave-channel')
     , plugChannelButtonElement = document.getElementById('plug-channel')
@@ -13,7 +13,7 @@
     , userIdentifierTextElement = document.getElementById('user-identifier')
     , roomIdentifierTextElement = document.getElementById('room-identifier')
     , approveIdentifierTextElement = document.getElementById('approve-identifier')
-    , signaler = new window.Signaler('ws://localhost:9876', {
+    , signaler = new window.signaler.Signaler('ws://localhost:3001', {
         'audio': true,
         'video': false
       }, {
@@ -21,135 +21,141 @@
           'OfferToReceiveAudio': true,
           'OfferToReceiveVideo': false
         }
-      })
-    , userIdentifier;
-
-  window.fetch('/token').then(function onSuccess(data) {
-
-    if (data &&
-      data.ok) {
-
-      return data.json();
-    }
-    return {};
-  }, function onFailure(failure) {
-
-    window.console.error(failure);
-  }).then(function onJsonResponse(jsonResponse) {
-
-    if (jsonResponse &&
-      jsonResponse.token &&
-      jsonResponse.userID) {
-
-      userIdentifier = jsonResponse.userID;
-      userIdentifierTextElement.value = userIdentifier;
-      signaler.then(function onSignalerReady(theSignaler) {
-
-        if (theSignaler) {
-
-          window.addEventListener('signaler:my-stream', function onMyStreamArrival(event) {
-
-            if (event &&
-              event.detail &&
-              event.detail.stream &&
-              event.detail.userid &&
-              roomIdentifierTextElement &&
-              roomIdentifierTextElement.value) {
-              var newVideoElement = document.createElement('video')
-                , videoParentElement = document.getElementById('video');
-
-              window.attachMediaStream(newVideoElement, event.detail.stream);
-              newVideoElement.autoplay = 'true';
-
-              videoParentElement.appendChild(newVideoElement);
-              theSignaler.streamOnChannel(roomIdentifierTextElement.value);
-            }
-          }, false);
-
-          theSignaler.userIsPresent(userIdentifier, jsonResponse.token);
-          createChannelButtonElement.onclick = function onCreateChannelClick() {
-
-            if (roomIdentifierTextElement &&
-              roomIdentifierTextElement.value) {
-
-              theSignaler.createChannel(roomIdentifierTextElement.value);
-            } else {
-
-              window.console.error('Manadatory channel name missing.');
-            }
-          };
-
-          joinChannelButtonElement.onclick = function onJoinChannelClick() {
-
-            if (roomIdentifierTextElement &&
-              roomIdentifierTextElement.value) {
-
-              theSignaler.joinChannel(roomIdentifierTextElement.value);
-            } else {
-
-              window.console.error('Manadatory channel name missing.');
-            }
-          };
-
-          plugChannelButtonElement.onclick = function onPlugChannelClick() {
-
-            theSignaler.getUserMedia();
-          };
-
-          sendOnDataChannelButtonElement.onclick = function onSendOnDataChannel() {
-
-            if (textToDataChannelTextAreaElement &&
-              textToDataChannelTextAreaElement.value) {
-
-              theSignaler.broadcast(
-                roomIdentifierTextElement.value,
-                textToDataChannelTextAreaElement.value);
-            }
-          };
-
-          approveUserButtonElement.onclick = function onApproveUserClick() {
-
-            if (roomIdentifierTextElement &&
-              roomIdentifierTextElement.value &&
-              approveIdentifierTextElement &&
-              approveIdentifierTextElement.value) {
-
-              theSignaler.approve(roomIdentifierTextElement.value, approveIdentifierTextElement.value);
-            }
-          };
-
-          unApproveUserButtonElement.onclick = function onUnApproveUserClick() {
-
-            if (roomIdentifierTextElement &&
-              roomIdentifierTextElement.value &&
-              approveIdentifierTextElement &&
-              approveIdentifierTextElement.value) {
-
-              theSignaler.unApprove(roomIdentifierTextElement.value, approveIdentifierTextElement.value);
-            }
-          };
-
-          leaveChannelButtonElement.onclick = function onLeaveChannelClick() {
-
-            if (roomIdentifierTextElement &&
-              roomIdentifierTextElement.value) {
-
-              theSignaler.leaveChannel(roomIdentifierTextElement.value, true);
-              roomIdentifierTextElement.value = '';
-            } else {
-
-              window.console.error('Manadatory channel name missing.');
-            }
-          };
-        }
       });
+
+  signaler.forEach(console.info);
+
+  createChannelButtonElement.onclick = function onCreateChannelClick() {
+
+    if (roomIdentifierTextElement &&
+      roomIdentifierTextElement.value) {
+
+      signaler.createChannel(roomIdentifierTextElement.value);
+    } else {
+
+      window.console.error('Manadatory channel name missing.');
     }
-  }, function onFailure(failure) {
+  };
 
-    window.console.log(failure);
-  });
+  joinChannelButtonElement.onclick = function onJoinChannelClick() {
 
-  window.addEventListener('signaler:ready', function onStreamReady() {
+    if (roomIdentifierTextElement &&
+      roomIdentifierTextElement.value) {
+
+      signaler.joinChannel(roomIdentifierTextElement.value);
+    } else {
+
+      window.console.error('Manadatory channel name missing.');
+    }
+  };
+
+  window.fetch('/token')
+    .then(data => {
+
+      if (data &&
+        data.ok) {
+
+        return data.json();
+      }
+      return {};
+    })
+    .then(jsonResponse => {
+
+      if (jsonResponse &&
+        jsonResponse.token &&
+        jsonResponse.userID) {
+
+        userIdentifierTextElement.value = jsonResponse.userID;
+        signaler.userIsPresent(jsonResponse.userID, jsonResponse.token);
+      }
+    })
+    .catch(failure => {
+
+      window.console.error(failure);
+    });
+}());
+
+/*
+signaler.then(function onSignalerReady(theSignaler) {
+
+  if (theSignaler) {
+
+    window.addEventListener('signaler:my-stream', function onMyStreamArrival(event) {
+
+      if (event &&
+        event.detail &&
+        event.detail.stream &&
+        event.detail.userid &&
+        roomIdentifierTextElement &&
+        roomIdentifierTextElement.value) {
+        var newVideoElement = document.createElement('video')
+          , videoParentElement = document.getElementById('video');
+
+        window.attachMediaStream(newVideoElement, event.detail.stream);
+        newVideoElement.autoplay = 'true';
+
+        videoParentElement.appendChild(newVideoElement);
+        theSignaler.streamOnChannel(roomIdentifierTextElement.value);
+      }
+    }, false);
+
+    theSignaler.userIsPresent(userIdentifier, jsonResponse.token);
+
+    plugChannelButtonElement.onclick = function onPlugChannelClick() {
+
+      theSignaler.getUserMedia();
+    };
+
+    sendOnDataChannelButtonElement.onclick = function onSendOnDataChannel() {
+
+      if (textToDataChannelTextAreaElement &&
+        textToDataChannelTextAreaElement.value) {
+
+        theSignaler.broadcast(
+          roomIdentifierTextElement.value,
+          textToDataChannelTextAreaElement.value);
+      }
+    };
+
+    approveUserButtonElement.onclick = function onApproveUserClick() {
+
+      if (roomIdentifierTextElement &&
+        roomIdentifierTextElement.value &&
+        approveIdentifierTextElement &&
+        approveIdentifierTextElement.value) {
+
+        theSignaler.approve(roomIdentifierTextElement.value, approveIdentifierTextElement.value);
+      }
+    };
+
+    unApproveUserButtonElement.onclick = function onUnApproveUserClick() {
+
+      if (roomIdentifierTextElement &&
+        roomIdentifierTextElement.value &&
+        approveIdentifierTextElement &&
+        approveIdentifierTextElement.value) {
+
+        theSignaler.unApprove(roomIdentifierTextElement.value, approveIdentifierTextElement.value);
+      }
+    };
+
+    leaveChannelButtonElement.onclick = function onLeaveChannelClick() {
+
+      if (roomIdentifierTextElement &&
+        roomIdentifierTextElement.value) {
+
+        theSignaler.leaveChannel(roomIdentifierTextElement.value, true);
+        roomIdentifierTextElement.value = '';
+      } else {
+
+        window.console.error('Manadatory channel name missing.');
+      }
+    };
+  }
+});
+*/
+
+  /*window.addEventListener('signaler:ready', () => {
 
     plugChannelButtonElement.removeAttribute('disabled');
     window.console.log('ready!');
@@ -190,6 +196,4 @@
 
       window.console.log(event.detail);
     }
-  }, false);
-
-}(window, document));
+  }, false);*/

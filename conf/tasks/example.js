@@ -11,7 +11,7 @@
       node.kill();
     }
 
-    node = spawn('node', ['--harmony_proxies', 'example/start-node.js'], {
+    node = spawn('node', ['--harmony-proxies', 'example/start-node.js'], {
       'stdio': 'inherit'
     });
     node.on('close', code => {
@@ -27,7 +27,7 @@
       node.kill();
     }
 
-    node = spawn('./node_modules/.bin/node-debug', ['--harmony_proxies', 'example/start-node.js'], {
+    node = spawn('./node_modules/.bin/node-debug', ['--nodejs', '--harmony-proxies', 'example/start-node.js'], {
       'stdio': 'inherit'
     });
     node.on('close', code => {

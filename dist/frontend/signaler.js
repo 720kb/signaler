@@ -6,14 +6,14 @@
 * https://github.com/720kb/signaler
 *
 * MIT license
-* Sun Mar 06 2016
+* Mon Mar 07 2016
 */
 
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('rxjs/Rx'), require('comunicator')) :
-  typeof define === 'function' && define.amd ? define('signaler', ['rxjs/Rx', 'comunicator'], factory) :
-  (factory(global.Rx,global.comunicator));
-}(this, function (Rx,comunicator) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('rxjs/Rx'), require('comunicator')) :
+  typeof define === 'function' && define.amd ? define('signaler', ['exports', 'rxjs/Rx', 'comunicator'], factory) :
+  (factory((global.signaler = global.signaler || {}),global.Rx,global.comunicator));
+}(this, function (exports,Rx,comunicator) { 'use strict';
 
   Rx = 'default' in Rx ? Rx['default'] : Rx;
 
@@ -69,12 +69,6 @@
 
   babelHelpers;
 
-  var sdpConstraints = {
-    'mandatory': {
-      'OfferToReceiveAudio': true,
-      'OfferToReceiveVideo': true
-    }
-  };
   var rtcConfiguration = {
     'iceServers': [{
       'urls': 'stun:stun.l.google.com:19302'
@@ -87,14 +81,17 @@
   var iceCandidates = [];
   var peerConnectionSym = Symbol('peer-connection');
   var dataChannelSym = Symbol('data-channel');
-  var myStreamSym = Symbol('my-stream');
   var SignalerPeerConnection = function (_Rx$Observable) {
     babelHelpers.inherits(SignalerPeerConnection, _Rx$Observable);
 
-    function SignalerPeerConnection() {
-      var sdpConstr = arguments.length <= 0 || arguments[0] === undefined ? sdpConstraints : arguments[0];
+    function SignalerPeerConnection(sdpConstr) {
       babelHelpers.classCallCheck(this, SignalerPeerConnection);
 
+
+      if (!sdpConstr) {
+
+        throw new Error('Manadatory spd constraints missing.');
+      }
 
       var internalObservable = new Rx.Observable(function (subscriber) {
         var dataChannelError = function dataChannelError(error) {
@@ -114,19 +111,9 @@
                 case '_signaler:got-stream?':
                   {
 
-                    if (_this[myStreamSym]) {
-
-                      subscriber.next({
-                        'type': 'add-stream',
-                        'stream': _this[myStreamSym]
-                      });
-                    } else {
-
-                      subscriber.next({
-                        'type': 'warn',
-                        'cause': 'Atm no stream'
-                      });
-                    }
+                    subscriber.next({
+                      'type': 'add-stream'
+                    });
                     break;
                   }
                 default:
@@ -387,31 +374,63 @@
 
         return this[dataChannelSym];
       }
-    }, {
-      key: 'stream',
-      get: function get() {
-
-        if (!this[myStreamSym]) {
-
-          throw new Error('Stream is not present. You have to ask this to the user');
-        }
-
-        return this[myStreamSym];
-      }
     }]);
     return SignalerPeerConnection;
   }(Rx.Observable);
 
   var comunicatorSym = Symbol('comunicator');
-
+  var myStreamSym = Symbol('my-stream');
+  var userMediaConstraintsSym = Symbol('user-media-constraint');
+  var sdpConstraintsSym = Symbol('sdp-constraints');
+  var unknownPeerValue = 'unknown-peer';
+  var getUserMediaConstraints = {
+    'audio': true,
+    'video': true
+  };
+  var sdpConstraints = {
+    'mandatory': {
+      'OfferToReceiveAudio': true,
+      'OfferToReceiveVideo': true
+    }
+  };
   var Signaler = function (_Rx$Observable) {
     babelHelpers.inherits(Signaler, _Rx$Observable);
 
     function Signaler(websocketUrl) {
+      var getUserMediaConstr = arguments.length <= 1 || arguments[1] === undefined ? getUserMediaConstraints : arguments[1];
+      var sdpConstr = arguments.length <= 2 || arguments[2] === undefined ? sdpConstraints : arguments[2];
       babelHelpers.classCallCheck(this, Signaler);
 
 
-      var internalObservable = new Rx.Observable(function (subscriber) {}).share();
+      var internalObservable = new Rx.Observable(function (subscriber) {
+
+        _this.getUserMedia = function () {
+
+          navigator.mediaDevices.getUserMedia(_this.userMediaConstraints).then(function (localStream) {
+
+            if (!_this[myStreamSym]) {
+
+              subscriber.next({
+                'type': 'my-stream',
+                'stream': localStream
+              });
+              _this[myStreamSym] = localStream;
+            }
+
+            //TODO try to put the contextified audio
+            //audioContext.createMediaStreamSource(myStream);
+            //, contextifiedLocalStream = audioContext.createMediaStreamDestination();
+          }).catch(function (error) {
+
+            throw new Error(error);
+          });
+        };
+
+        _this[comunicatorSym].forEach(function (element) {
+
+          console.info(element);
+        });
+      }).share();
 
       var _this = babelHelpers.possibleConstructorReturn(this, Object.getPrototypeOf(Signaler).call(this, function (observer) {
 
@@ -424,11 +443,91 @@
       }));
 
       _this[comunicatorSym] = new comunicator.Comunicator(websocketUrl);
+      _this[userMediaConstraintsSym] = getUserMediaConstr;
+      _this[sdpConstraintsSym] = sdpConstr;
       return _this;
     }
 
+    babelHelpers.createClass(Signaler, [{
+      key: 'createChannel',
+      value: function createChannel(channel) {
+
+        if (!channel) {
+
+          throw new Error('Missing mandatory <channel> parameter.');
+        }
+
+        this[comunicatorSym].sendTo(unknownPeerValue, {
+          'type': 'create-channel',
+          channel: channel
+        }, true);
+      }
+    }, {
+      key: 'joinChannel',
+      value: function joinChannel(channel) {
+
+        if (!channel) {
+
+          throw new Error('Missing mandatory <channel> parameter.');
+        }
+
+        this[comunicatorSym].sendTo(unknownPeerValue, {
+          'type': 'join-channel',
+          channel: channel
+        }, true);
+      }
+    }, {
+      key: 'streamOnChannel',
+      value: function streamOnChannel() {}
+    }, {
+      key: 'sendTo',
+      value: function sendTo() {}
+    }, {
+      key: 'broadcast',
+      value: function broadcast() {}
+    }, {
+      key: 'approve',
+      value: function approve() {}
+    }, {
+      key: 'unApprove',
+      value: function unApprove() {}
+    }, {
+      key: 'leaveChannel',
+      value: function leaveChannel() {}
+    }, {
+      key: 'userIsPresent',
+      value: function userIsPresent(whoami, token) {
+
+        return this[comunicatorSym].userIsPresent(whoami, token);
+      }
+    }, {
+      key: 'userMediaConstraints',
+      get: function get() {
+
+        return this[userMediaConstraintsSym];
+      }
+    }, {
+      key: 'sdpConstraints',
+      get: function get() {
+
+        return this[sdpConstraintsSym];
+      }
+    }, {
+      key: 'stream',
+      get: function get() {
+
+        if (!this[myStreamSym]) {
+
+          throw new Error('Stream is not present. You have to ask this to the user');
+        }
+
+        return this[myStreamSym];
+      }
+    }]);
     return Signaler;
   }(Rx.Observable);
+
+  exports.Signaler = Signaler;
 
 }));
 //# sourceMappingURL=signaler.js.map
