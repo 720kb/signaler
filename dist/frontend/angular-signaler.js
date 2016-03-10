@@ -6,7 +6,7 @@
 * https://github.com/720kb/signaler
 *
 * MIT license
-* Mon Mar 07 2016
+* Thu Mar 10 2016
 */
 
 (function (global, factory) {

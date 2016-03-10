@@ -34,10 +34,12 @@ var ObservableState = function (_Rx$Observable) {
             'type': 'added',
             value: value
           });
+          return true;
         },
         'deleteProperty': function deleteProperty(target, property) {
 
           console.info(target, property);
+          return true;
         }
       };
     }).share();
