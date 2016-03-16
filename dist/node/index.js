@@ -12,267 +12,278 @@ module.exports = function (comunicator) {
   }
   var signalerState = new ObservableState();
 
+  comunicator.forEach(function (element) {
+
+    console.info(element);
+  });
+
+  signalerState.forEach(function (element) {
+
+    console.info(element);
+  });
+
   signalerState.filter(function (element) {
     return element.type === 'added';
   }).map(function (element) {
     return element.value;
+  }).filter(function (element) {
+    return element.role === 'master';
   }).forEach(function (element) {
-    var doSend = undefined;
+    if (element.channel && element.user) {
+      (function () {
 
-    if (element.role === 'master') {
+        var channel = signalerState.getChannelInState(element.channel),
+            channelElements = Object.keys(channel);
 
-      doSend = function doSend(aChannelElement) {
+        channelElements.forEach(function (userIdentification) {
+          var userInChannelDescription = channel[userIdentification];
 
-        if (aChannelElement.role === 'slave') {
+          if (userInChannelDescription.role === 'slave') {
 
-          comunicator.sendTo(aChannelElement.user, element.user, {
-            'type': 'do-handshake',
-            'channel': aChannelElement.channel
-          });
-          console.info(aChannelElement, 'to', element.user, 'on', aChannelElement.channel);
-        } else {
+            comunicator.sendTo(userInChannelDescription.user, element.user, {
+              'type': 'do-handshake',
+              'channel': userInChannelDescription.channel
+            });
+          }
+        });
+      })();
+    } else {
 
-          console.info(aChannelElement, 'skipped');
-        }
-      };
-    } else if (element.role === 'slave') {
+      process.nextTick(function () {
 
-      doSend = function doSend(aChannelElement) {
-
-        if (aChannelElement.role === 'master') {
-
-          comunicator.sendTo(element.user, aChannelElement.user, {
-            'type': 'do-handshake',
-            'channel': aChannelElement.channel
-          });
-          console.info(element.user, 'to', aChannelElement.user, 'on', aChannelElement.channel);
-        } else {
-
-          console.info(aChannelElement, 'skipped');
-        }
-      };
+        throw new Error('Missing mandatory fields channel and user');
+      });
     }
+  });
 
-    var channel = signalerState.getChannelInState(element.channel),
-        channelElements = Object.keys(channel),
-        channelElementsLength = channelElements.length;
-    for (var channelIndex = 0; channelIndex < channelElementsLength; channelIndex += 1) {
-      var aChannelElement = channelElements[channelIndex];
+  signalerState.filter(function (element) {
+    return element.type === 'added';
+  }).map(function (element) {
+    return element.value;
+  }).filter(function (element) {
+    return element.role === 'slave';
+  }).forEach(function (element) {
+    if (element.channel && element.user) {
+      (function () {
 
-      doSend(channel[aChannelElement]);
+        var channel = signalerState.getChannelInState(element.channel),
+            channelElements = Object.keys(channel);
+
+        channelElements.forEach(function (userIdentification) {
+          var userInChannelDescription = channel[userIdentification];
+
+          if (userInChannelDescription.role === 'master') {
+
+            comunicator.sendTo(element.user, userInChannelDescription.user, {
+              'type': 'do-handshake',
+              'channel': userInChannelDescription.channel
+            });
+          }
+        });
+      })();
+    } else {
+
+      process.nextTick(function () {
+
+        throw new Error('Missing mandatory fields channel and user');
+      });
     }
   });
 
   comunicator.filter(function (element) {
-    return element.type === 'message-arrived';
+    return element.type === 'message-arrived' && element.what && element.what.type === 'create-channel';
+  }).map(function (element) {
+    return {
+      'channel': element.what.channel,
+      'whoami': element.whoami
+    };
   }).forEach(function (element) {
+    if (element.channel) {
+      var theChannel = element.channel,
+          theUser = element.whoami;
 
-    // { 'whoami': parsedMsg.data.whoami, 'who': parsedMsg.data.who, 'what': parsedMsg.data.what }
-    if (element && element.whoami && element.who && element.what && element.what.type) {
+      if (!signalerState.containsInState(theChannel)) {
+
+        signalerState.addChannelInState(theChannel);
+      } else if (signalerState.getChannelInState(theChannel).master && signalerState.getChannelInState(theChannel).master.user !== theUser) {
+
+        process.nextTick(function () {
+
+          throw new Error('There is already a master user for this channel');
+        });
+      }
+
+      signalerState.getChannelInState(theChannel).master = {
+        'user': theUser,
+        'role': 'master',
+        'channel': theChannel
+      };
+    } else {
+
+      throw new Error('Missing mandatory <channel> value');
+    }
+  });
+
+  comunicator.filter(function (element) {
+    return element.type === 'message-arrived' && element.what && element.what.type === 'join-channel';
+  }).map(function (element) {
+    return {
+      'channel': element.what.channel,
+      'whoami': element.whoami
+    };
+  }).forEach(function (element) {
+    if (element.channel) {
       (function () {
-        var messageBody = element.what,
-            messageType = messageBody.type;
+        var theChannel = element.channel,
+            theUser = element.whoami;
 
-        switch (messageType) {
+        if (!signalerState.containsInState(theChannel)) {
 
-          case 'create-channel':
-            {
+          signalerState.addChannelInState(theChannel);
+        } else if (signalerState.getChannelInState(theChannel).master && signalerState.getChannelInState(theChannel).master.user === theUser) {
 
-              if (messageBody.channel) {
-                var theChannel = messageBody.channel,
-                    theUser = element.whoami;
+          process.nextTick(function () {
 
-                if (!signalerState.containsInState(theChannel)) {
-
-                  signalerState.addChannelInState(theChannel);
-                } else if (signalerState.getChannelInState(theChannel).master && signalerState.getChannelInState(theChannel).master.user !== theUser) {
-
-                  process.nextTick(function () {
-
-                    throw new Error('There is already a master user for this channel');
-                  });
-                }
-
-                signalerState.getChannelInState(theChannel).master = {
-                  'user': theUser,
-                  'role': 'master',
-                  'channel': theChannel
-                };
-              } else {
-
-                throw new Error('Missing mandatory <channel> value');
-              }
-              break;
-            }
-
-          case 'join-channel':
-            {
-
-              if (messageBody.channel) {
-                (function () {
-                  var theChannel = messageBody.channel,
-                      theUser = element.whoami;
-
-                  if (!signalerState.containsInState(theChannel)) {
-
-                    signalerState.addChannelInState(theChannel);
-                  } else if (signalerState.getChannelInState(theChannel).master && signalerState.getChannelInState(theChannel).master.user === theUser) {
-
-                    process.nextTick(function () {
-
-                      throw new Error('The user ' + theUser + ' can be either master or slave');
-                    });
-                  }
-
-                  signalerState.getChannelInState(theChannel)[theUser] = {
-                    'user': theUser,
-                    'role': 'slave',
-                    'channel': theChannel
-                  };
-                })();
-              } else {
-
-                throw new Error('Missing mandatory <channel> value');
-              }
-              break;
-            }
-
-          case 'offer':
-            {
-
-              if (messageBody.channel && messageBody.offer) {
-
-                comunicator.sendTo(element.whoami, element.who, {
-                  'type': 'take-offer',
-                  'channel': messageBody.channel,
-                  'offer': messageBody.offer
-                });
-              } else {
-
-                throw new Error('Missing mandatory <channel> and <offer> values');
-              }
-              break;
-            }
-
-          case 'answer':
-            {
-
-              if (messageBody.channel && messageBody.answer) {
-
-                comunicator.sendTo(element.whoami, element.who, {
-                  'type': 'take-answer',
-                  'channel': messageBody.channel,
-                  'answer': messageBody.answer
-                });
-              } else {
-
-                throw new Error('Missing mandatory <channel> and <answer> values');
-              }
-              break;
-            }
-
-          case 'use-ice-candidates':
-            {
-              var theChannel = signalerState.channels[messageBody.channel];
-
-              theChannel.forEach(function (anElement) {
-
-                if (anElement && anElement.user === element.who) {
-
-                  comunicator.sendTo(element.whoami, element.who, {
-                    'type': 'take-candidates',
-                    'channel': messageBody.channel,
-                    'candidates': messageBody.candidates
-                  });
-                }
-              });
-              break;
-            }
-
-          case 'approve':
-            {
-              var theChannel = signalerState.channels[messageBody.channel];
-
-              theChannel.forEach(function (anElement) {
-
-                if (anElement && anElement.user === element.who && !anElement.approved) {
-
-                  anElement.approved = true;
-                } else if (anElement.role !== 'master') {
-
-                  comunicator.sendTo(element.who, anElement.user, {
-                    'type': 'approved',
-                    'channel': anElement.channel
-                  });
-                }
-              });
-              break;
-            }
-
-          case 'un-approve':
-            {
-              var _ret3 = function () {
-                var theChannel = signalerState.channels[messageBody.channel];
-
-                theChannel.forEach(function (anElement) {
-
-                  if (anElement && anElement.user === element.who && anElement.approved) {
-                    var usersInChannelExceptApproved = theChannel.filter(function (anElementToFilter) {
-
-                      if (anElementToFilter.user !== element.who && anElementToFilter.role !== 'master') {
-
-                        return true;
-                      }
-                    }).map(function (anElementToMap) {
-
-                      return anElementToMap.user;
-                    });
-
-                    delete anElement.approved;
-                    comunicator.sendTo(element.whoami, element.who, {
-                      'type': 'you-are-un-approved',
-                      'channel': anElement.channel,
-                      'users': usersInChannelExceptApproved
-                    });
-                  } else if (anElement.role === 'slave') {
-
-                    comunicator.sendTo(element.who, anElement.user, {
-                      'type': 'un-approved',
-                      'channel': anElement.channel
-                    });
-                  }
-                });
-                return 'break';
-              }();
-
-              if (_ret3 === 'break') break;
-            }
-
-          case 'leave-channel':
-            {
-              var theChannel = signalerState.channels[messageBody.channel];
-
-              for (var theChannelIndex = theChannel.length - 1; theChannelIndex >= 0; theChannelIndex -= 1) {
-                var theUser = theChannel[theChannelIndex];
-
-                if (theUser && theUser.user === element.whoami) {
-
-                  signalerState.channels[messageBody.channel].splice(theChannelIndex, 1);
-                }
-              }
-              break;
-            }
-
-          default:
-            {
-
-              throw new Error('Message arrived un-manageable ' + JSON.stringify(element));
-            }
+            throw new Error('The user ' + theUser + ' can be either master or slave');
+          });
         }
+
+        signalerState.getChannelInState(theChannel)[theUser] = {
+          'user': theUser,
+          'role': 'slave',
+          'channel': theChannel
+        };
       })();
     } else {
 
-      throw new Error('Problem during message delivery for ' + JSON.stringify(element));
+      throw new Error('Missing mandatory <channel> value');
+    }
+  });
+
+  /*comunicator
+    .filter(element => element.type === 'message-arrived' &&
+      element.what &&
+      element.what.offer)
+    .map(element => ({
+      'channel': element.what.channel,
+      'offer': element.what.offer,
+      'whoami': element.whoami,
+      'who': element.who
+    }))
+    .forEach(element => {
+      comunicator.sendTo(element.whoami, element.who, {
+        'type': 'take-offer',
+        'channel': element.channel,
+        'offer': element.offer
+      });
+      console.info(element.whoami, 'to', element.who, 'message', {
+        'type': 'take-offer',
+        'channel': element.channel,
+        'offer': element.offer
+      })
+    });*/
+
+  comunicator.filter(function (element) {
+    return element.type === 'message-arrived' && element.what && element.what.type === 'answer';
+  }).forEach(function (element) {
+    if (element.channel && element.answer) {
+
+      comunicator.sendTo(element.whoami, element.who, {
+        'type': 'take-answer',
+        'channel': element.channel,
+        'answer': element.answer
+      });
+    } else {
+
+      throw new Error('Missing mandatory <channel> and <answer> values');
+    }
+  });
+
+  comunicator.filter(function (element) {
+    return element.type === 'message-arrived' && element.what && element.what.type === 'use-ice-candidates';
+  }).forEach(function (element) {
+    var theChannel = signalerState.channels[element.channel];
+
+    theChannel.forEach(function (anElement) {
+
+      if (anElement && anElement.user === element.who) {
+
+        comunicator.sendTo(element.whoami, element.who, {
+          'type': 'take-candidates',
+          'channel': element.channel,
+          'candidates': element.candidates
+        });
+      }
+    });
+  });
+
+  comunicator.filter(function (element) {
+    return element.type === 'message-arrived' && element.what && element.what.type === 'approve';
+  }).forEach(function (element) {
+    var theChannel = signalerState.channels[element.channel];
+
+    theChannel.forEach(function (anElement) {
+
+      if (anElement && anElement.user === element.who && !anElement.approved) {
+
+        anElement.approved = true;
+      } else if (anElement.role !== 'master') {
+
+        comunicator.sendTo(element.who, anElement.user, {
+          'type': 'approved',
+          'channel': anElement.channel
+        });
+      }
+    });
+  });
+
+  comunicator.filter(function (element) {
+    return element.type === 'message-arrived' && element.what && element.what.type === 'un-approve';
+  }).forEach(function (element) {
+    var theChannel = signalerState.channels[element.channel];
+
+    theChannel.forEach(function (anElement) {
+
+      if (anElement && anElement.user === element.who && anElement.approved) {
+        var usersInChannelExceptApproved = theChannel.filter(function (anElementToFilter) {
+
+          if (anElementToFilter.user !== element.who && anElementToFilter.role !== 'master') {
+
+            return true;
+          }
+        }).map(function (anElementToMap) {
+
+          return anElementToMap.user;
+        });
+
+        delete anElement.approved;
+        comunicator.sendTo(element.whoami, element.who, {
+          'type': 'you-are-un-approved',
+          'channel': anElement.channel,
+          'users': usersInChannelExceptApproved
+        });
+      } else if (anElement.role === 'slave') {
+
+        comunicator.sendTo(element.who, anElement.user, {
+          'type': 'un-approved',
+          'channel': anElement.channel
+        });
+      }
+    });
+  });
+
+  comunicator.filter(function (element) {
+    return element.type === 'message-arrived' && element.what && element.what.type === 'leave-channel';
+  }).forEach(function (element) {
+    var theChannel = signalerState.channels[element.channel];
+
+    for (var theChannelIndex = theChannel.length - 1; theChannelIndex >= 0; theChannelIndex -= 1) {
+      var theUser = theChannel[theChannelIndex];
+
+      if (theUser && theUser.user === element.whoami) {
+
+        signalerState.channels[element.channel].splice(theChannelIndex, 1);
+      }
     }
   });
 
@@ -280,7 +291,7 @@ module.exports = function (comunicator) {
     return element.type === 'user-leave';
   }).forEach(function (element) {
 
-    console.info(element, signalerState.channels); //TODO: fix this!
+    console.info(element, signalerState); //TODO: fix this!
     /*for (const aChannel of signalerState.channels) {
        if (aChannel &&
         aChannel[0] &&

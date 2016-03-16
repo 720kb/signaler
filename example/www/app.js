@@ -23,7 +23,11 @@
         }
       });
 
-  signaler.forEach(console.info);
+  window.theSignaler = signaler;
+
+  signaler.forEach(function(element) {
+    return console.info(element);
+  });
 
   createChannelButtonElement.onclick = function onCreateChannelClick() {
 

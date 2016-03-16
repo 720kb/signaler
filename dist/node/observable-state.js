@@ -73,6 +73,12 @@ var ObservableState = function (_Rx$Observable) {
 
       return signalerState.has('channel-' + channelName);
     }
+  }, {
+    key: 'state',
+    get: function get() {
+
+      return signalerState;
+    }
   }]);
 
   return ObservableState;

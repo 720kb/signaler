@@ -6,7 +6,7 @@
 * https://github.com/720kb/signaler
 *
 * MIT license
-* Thu Mar 10 2016
+* Wed Mar 16 2016
 */
 
 (function (global, factory) {
@@ -78,7 +78,7 @@
   };
   var rtcOptions = {};
   var rtcDataChannelOptions = {};
-  var iceCandidates = [];
+  var iceCandidatesSym = Symbol('ice-candidates');
   var peerConnectionSym = Symbol('peer-connection');
   var dataChannelSym = Symbol('data-channel');
   var SignalerPeerConnection = function (_Rx$Observable) {
@@ -165,12 +165,12 @@
 
           if (event.candidate) {
 
-            iceCandidates.push(event.candidate);
-          } else if (iceCandidates && iceCandidates.length >= 0) {
+            _this[iceCandidatesSym].push(event.candidate);
+          } else if (_this[iceCandidatesSym] && _this[iceCandidatesSym].length >= 0) {
 
             subscriber.next({
               'type': 'use-ice-candidates',
-              'candidates': iceCandidates.splice(0, iceCandidates.length)
+              'candidates': _this[iceCandidatesSym].splice(0, _this[iceCandidatesSym].length)
             });
           }
         };
@@ -211,20 +211,11 @@
 
           _this[peerConnectionSym].createOffer().then(function (offer) {
 
-            _this[peerConnectionSym].setLocalDescription(new RTCSessionDescription(offer));
-            return offer;
-          }, function (error) {
-
-            subscriber.error({
-              'type': 'error',
-              'cause': error
-            });
-          }).then(function (offer) {
-
             subscriber.next({
               'type': 'offer',
               offer: offer
             });
+            return _this[peerConnectionSym].setLocalDescription(new RTCSessionDescription(offer));
           }).catch(function (error) {
 
             subscriber.error({
@@ -308,38 +299,31 @@
 
         _this.setRemoteDescription = function (payload) {
 
-          _this[peerConnectionSym].setRemoteDescription(new RTCSessionDescription(payload)).then(function () {
+          if (!_this[peerConnectionSym].remoteDescription.type) {
 
-            return _this[peerConnectionSym].createAnswer(_this.sdpConstr);
-          }, function (error) {
+            var setRemoteDescriptionPromise = _this[peerConnectionSym].setRemoteDescription(new RTCSessionDescription(payload));
 
-            subscriber.error({
-              'type': 'error',
-              'cause': error
-            });
-          }).then(function (answer) {
+            if (!_this[peerConnectionSym].localDescription.type) {
 
-            _this[peerConnectionSym].setLocalDescription(new RTCSessionDescription(answer));
-            return answer;
-          }, function (error) {
+              setRemoteDescriptionPromise.then(function () {
 
-            subscriber.error({
-              'type': 'error',
-              'cause': error
-            });
-          }).then(function (answer) {
+                return _this[peerConnectionSym].createAnswer(_this.sdpConstr);
+              }).then(function (answer) {
 
-            subscriber.next({
-              'type': 'answer',
-              answer: answer
-            });
-          }).catch(function (error) {
+                subscriber.next({
+                  'type': 'answer',
+                  answer: answer
+                });
+                return _this[peerConnectionSym].setLocalDescription(new RTCSessionDescription(answer));
+              }).catch(function (error) {
 
-            subscriber.error({
-              'type': 'error',
-              'cause': error
-            });
-          });
+                subscriber.error({
+                  'type': 'error',
+                  'cause': error
+                });
+              });
+            }
+          }
         };
 
         return function () {
@@ -359,11 +343,31 @@
         };
       }));
 
+      internalObservable.forEach(function (element) {
+        return console.info(element);
+      });
+
+      _this[iceCandidatesSym] = [];
       _this.sdpConstr = sdpConstr;
       return _this;
     }
 
     babelHelpers.createClass(SignalerPeerConnection, [{
+      key: 'addIceCandidates',
+      value: function addIceCandidates(candidates) {
+        var _this2 = this;
+
+        if (candidates) {
+
+          candidates.forEach(function (element) {
+            return _this2[peerConnectionSym].addIceCandidate(new RTCIceCandidate(element));
+          });
+        } else {
+
+          throw new Error('Invalid candidates');
+        }
+      }
+    }, {
       key: 'dataChannel',
       get: function get() {
 
@@ -382,6 +386,8 @@
   var myStreamSym = Symbol('my-stream');
   var userMediaConstraintsSym = Symbol('user-media-constraint');
   var sdpConstraintsSym = Symbol('sdp-constraints');
+  var initiatorsSym = Symbol('initiators');
+  var peersSym = Symbol('peers');
   var unknownPeerValue = 'unknown-peer';
   var getUserMediaConstraints = {
     'audio': true,
@@ -404,6 +410,133 @@
 
       var internalObservable = new Rx.Observable(function (subscriber) {
 
+        _this[comunicatorSym].filter(function (element) {
+          return element.what && element.what.type === 'do-handshake';
+        }).forEach(function (element) {
+
+          if (element.whoami && element.what.channel) {
+            var p2pConnection = new SignalerPeerConnection(sdpConstr);
+
+            _this[initiatorsSym].set(element.what.channel, element.who);
+
+            p2pConnection.filter(function (fromPeerConnection) {
+              return fromPeerConnection.type === 'offer';
+            }).forEach(function (fromPeerConnection) {
+              return _this[comunicatorSym].sendTo(element.whoami, {
+                'channel': element.what.channel,
+                'offer': fromPeerConnection.offer
+              });
+            });
+
+            p2pConnection.filter(function (fromPeerConnection) {
+              return fromPeerConnection.type === 'use-ice-candidates';
+            }).forEach(function (fromPeerConnection) {
+              return _this[comunicatorSym].sendTo(element.whoami, {
+                'channel': element.what.channel,
+                'candidates': fromPeerConnection.candidates
+              });
+            });
+            _this[peersSym].set(element.what.channel + '-' + element.who, p2pConnection);
+          } else {
+
+            window.setTimeout(function () {
+
+              throw new Error('Missing sender and channel that are mandatory');
+            });
+          }
+        });
+
+        _this[comunicatorSym].filter(function (element) {
+          return element.what && element.what.offer;
+        }).forEach(function (element) {
+
+          if (element.whoami && element.what.channel && element.what.offer) {
+            var p2pConnection = undefined;
+
+            if (_this[peersSym].has(element.what.channel + '-' + element.who)) {
+
+              p2pConnection = _this[peersSym].get(element.what.channel + '-' + element.who);
+            } else {
+              p2pConnection = new SignalerPeerConnection(sdpConstr);
+
+              _this[initiatorsSym].set(element.what.channel, element.whoami);
+              _this[peersSym].set(element.what.channel + '-' + element.who, p2pConnection);
+            }
+
+            p2pConnection.filter(function (fromPeerConnection) {
+              return fromPeerConnection.type === 'answer';
+            }).forEach(function (fromPeerConnection) {
+              return _this[comunicatorSym].sendTo(element.whoami, {
+                'channel': element.what.channel,
+                'answer': fromPeerConnection.answer
+              });
+            });
+
+            p2pConnection.filter(function (fromPeerConnection) {
+              return fromPeerConnection.type === 'use-ice-candidates';
+            }).forEach(function (fromPeerConnection) {
+              return _this[comunicatorSym].sendTo(element.whoami, {
+                'channel': element.what.channel,
+                'candidates': fromPeerConnection.candidates
+              });
+            });
+            p2pConnection.setRemoteDescription(element.what.offer);
+          } else {
+
+            window.setTimeout(function () {
+
+              throw new Error('Missing sender, channel and the offer that are mandatory');
+            });
+          }
+        });
+
+        _this[comunicatorSym].filter(function (element) {
+          return element.what && element.what.answer;
+        }).forEach(function (element) {
+
+          if (element.whoami && element.what.channel && element.what.answer) {
+            var p2pConnection = undefined;
+
+            if (_this[peersSym].has(element.what.channel + '-' + element.who)) {
+
+              p2pConnection = _this[peersSym].get(element.what.channel + '-' + element.who);
+            } else {
+
+              window.setTimeout(function () {
+
+                throw new Error('The peer connection must be already enstablished');
+              });
+            }
+
+            p2pConnection.setRemoteDescription(element.what.answer);
+          } else {
+
+            window.setTimeout(function () {
+
+              throw new Error('Missing sender, channel and the answer that are mandatory');
+            });
+          }
+        });
+
+        _this[comunicatorSym].filter(function (element) {
+          return element.what && element.what.candidates;
+        }).forEach(function (element) {
+          var p2pConnection = undefined;
+
+          if (_this[peersSym].has(element.what.channel + '-' + element.who)) {
+
+            p2pConnection = _this[peersSym].get(element.what.channel + '-' + element.who);
+          } else {
+
+            window.setTimeout(function () {
+
+              throw new Error('The peer connection must be already enstablished');
+            });
+          }
+
+          p2pConnection.addIceCandidates(element.what.candidates);
+        });
+
         _this.getUserMedia = function () {
 
           navigator.mediaDevices.getUserMedia(_this.userMediaConstraints).then(function (localStream) {
@@ -425,11 +558,6 @@
             throw new Error(error);
           });
         };
-
-        _this[comunicatorSym].forEach(function (element) {
-
-          console.info(element);
-        });
       }).share();
 
       var _this = babelHelpers.possibleConstructorReturn(this, Object.getPrototypeOf(Signaler).call(this, function (observer) {
@@ -445,6 +573,8 @@
       _this[comunicatorSym] = new comunicator.Comunicator(websocketUrl);
       _this[userMediaConstraintsSym] = getUserMediaConstr;
       _this[sdpConstraintsSym] = sdpConstr;
+      _this[peersSym] = new Map();
+      _this[initiatorsSym] = new Map();
       return _this;
     }
 
@@ -522,6 +652,18 @@
         }
 
         return this[myStreamSym];
+      }
+    }, {
+      key: 'peers',
+      get: function get() {
+
+        return this[peersSym];
+      }
+    }, {
+      key: 'initiators',
+      get: function get() {
+
+        return this[initiatorsSym];
       }
     }]);
     return Signaler;
