@@ -10,6 +10,7 @@
     , unApproveUserButtonElement = document.getElementById('un-approve-user')
     , sendOnDataChannelButtonElement = document.getElementById('send-on-datachannel')
     , textToDataChannelTextAreaElement = document.getElementById('text-to-datachannel')
+    , messageOnDataChannelParagraphElement = document.getElementById('message-on-datachannel')
     , userIdentifierTextElement = document.getElementById('user-identifier')
     , roomIdentifierTextElement = document.getElementById('room-identifier')
     , approveIdentifierTextElement = document.getElementById('approve-identifier')
@@ -52,6 +53,24 @@
       window.console.error('Manadatory channel name missing.');
     }
   };
+
+  sendOnDataChannelButtonElement.onclick = function onSendOnDataChannel() {
+
+    if (textToDataChannelTextAreaElement &&
+      textToDataChannelTextAreaElement.value) {
+
+      signaler.broadcast(
+        roomIdentifierTextElement.value,
+        textToDataChannelTextAreaElement.value);
+    }
+  };
+
+  signaler
+    .filter(element => element.type === 'datachannel-message')
+    .forEach(element => {
+
+      messageOnDataChannelParagraphElement.innerHTML = element.payload;
+    });
 
   window.fetch('/token')
     .then(data => {
@@ -108,17 +127,6 @@ signaler.then(function onSignalerReady(theSignaler) {
     plugChannelButtonElement.onclick = function onPlugChannelClick() {
 
       theSignaler.getUserMedia();
-    };
-
-    sendOnDataChannelButtonElement.onclick = function onSendOnDataChannel() {
-
-      if (textToDataChannelTextAreaElement &&
-        textToDataChannelTextAreaElement.value) {
-
-        theSignaler.broadcast(
-          roomIdentifierTextElement.value,
-          textToDataChannelTextAreaElement.value);
-      }
     };
 
     approveUserButtonElement.onclick = function onApproveUserClick() {

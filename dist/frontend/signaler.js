@@ -129,7 +129,7 @@
 
               subscriber.next({
                 'type': 'datachannel-message',
-                'payload': event.data
+                'payload': JSON.parse(event.data)
               });
             }
           } else {
@@ -436,6 +436,12 @@
                 'candidates': fromPeerConnection.candidates
               });
             });
+
+            p2pConnection.filter(function (fromPeerConnection) {
+              return fromPeerConnection.type === 'datachannel-message';
+            }).forEach(function (fromPeerConnection) {
+              return subscriber.next(fromPeerConnection);
+            });
             _this[peersSym].set(element.what.channel + '-' + element.who, p2pConnection);
           } else {
 
@@ -479,6 +485,12 @@
                 'channel': element.what.channel,
                 'candidates': fromPeerConnection.candidates
               });
+            });
+
+            p2pConnection.filter(function (fromPeerConnection) {
+              return fromPeerConnection.type === 'datachannel-message';
+            }).forEach(function (fromPeerConnection) {
+              return subscriber.next(fromPeerConnection);
             });
             p2pConnection.setRemoteDescription(element.what.offer);
           } else {
@@ -570,6 +582,13 @@
         };
       }));
 
+      setTimeout(function () {
+
+        internalObservable.forEach(function (element) {
+          return console.info(element);
+        });
+      });
+
       _this[comunicatorSym] = new comunicator.Comunicator(websocketUrl);
       _this[userMediaConstraintsSym] = getUserMediaConstr;
       _this[sdpConstraintsSym] = sdpConstr;
@@ -611,10 +630,53 @@
       value: function streamOnChannel() {}
     }, {
       key: 'sendTo',
-      value: function sendTo() {}
+      value: function sendTo(channel, who, what) {
+
+        if (this[peersSym].has(channel + '-' + who)) {
+          var dataChannel = this[peersSym].get(channel + '-' + who).dataChannel;
+
+          dataChannel.send(JSON.stringify(what));
+        } else {
+
+          throw new Error('User ' + who + ' for channel ' + channel + ' do not exist');
+        }
+      }
     }, {
       key: 'broadcast',
-      value: function broadcast() {}
+      value: function broadcast(channel, what) {
+        var mapKeys = this[peersSym].keys();
+
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = mapKeys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var aMapKey = _step.value;
+
+            var channelAndWho = aMapKey.split('-');
+
+            if (channelAndWho[0] === String(channel)) {
+              var dataChannel = this[peersSym].get(aMapKey).dataChannel;
+
+              dataChannel.send(JSON.stringify(what));
+            }
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+      }
     }, {
       key: 'approve',
       value: function approve() {}
