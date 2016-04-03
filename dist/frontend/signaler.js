@@ -70,14 +70,11 @@
   babelHelpers;
 
   var rtcConfiguration = {
-    'iceServers': [/*
-                   {
-                   'urls': 'stun:stun.l.google.com:19302'
-                   },
-                   {
-                   'urls': 'stun:23.21.150.121'
-                   }*/
-    ]
+    'iceServers': [{
+      'urls': 'stun:stun.l.google.com:19302'
+    }, {
+      'urls': 'stun:23.21.150.121'
+    }]
   };
   var rtcOptions = {};
   var rtcDataChannelOptions = {};
