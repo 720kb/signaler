@@ -22,7 +22,7 @@
           'OfferToReceiveAudio': true,
           'OfferToReceiveVideo': false
         }
-      });
+      }, true);
 
   window.theSignaler = signaler;
 

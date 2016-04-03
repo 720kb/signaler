@@ -6,7 +6,7 @@
 * https://github.com/720kb/signaler
 *
 * MIT license
-* Wed Mar 16 2016
+* Sun Apr 03 2016
 */
 
 (function (global, factory) {
@@ -70,11 +70,14 @@
   babelHelpers;
 
   var rtcConfiguration = {
-    'iceServers': [{
-      'urls': 'stun:stun.l.google.com:19302'
-    }, {
-      'urls': 'stun:23.21.150.121'
-    }]
+    'iceServers': [/*
+                   {
+                   'urls': 'stun:stun.l.google.com:19302'
+                   },
+                   {
+                   'urls': 'stun:23.21.150.121'
+                   }*/
+    ]
   };
   var rtcOptions = {};
   var rtcDataChannelOptions = {};
@@ -85,6 +88,7 @@
     babelHelpers.inherits(SignalerPeerConnection, _Rx$Observable);
 
     function SignalerPeerConnection(sdpConstr) {
+      var joiner = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
       babelHelpers.classCallCheck(this, SignalerPeerConnection);
 
 
@@ -151,15 +155,41 @@
           subscriber.next({
             'type': 'datachannel-closed'
           });
+        },
+            negotiationNeeded = function negotiationNeeded() {
+
+          _this[peerConnectionSym].createOffer().then(function (offer) {
+
+            subscriber.next({
+              'type': 'offer',
+              offer: offer
+            });
+            return Promise.all([_this[peerConnectionSym].setLocalDescription(new RTCSessionDescription(offer)), Promise.resolve(offer)]);
+          }).then(function (resolved) {
+            return subscriber.next({
+              'type': 'offer-set',
+              'offer': resolved[1]
+            });
+          }).catch(function (error) {
+
+            subscriber.error({
+              'type': 'error',
+              'cause': error
+            });
+          });
         };
 
         _this[peerConnectionSym] = new RTCPeerConnection(rtcConfiguration, rtcOptions);
-        _this[dataChannelSym] = _this[peerConnectionSym].createDataChannel('signaler-datachannel', rtcDataChannelOptions);
+        if (!joiner) {
 
-        _this[dataChannelSym].onerror = dataChannelError;
-        _this[dataChannelSym].onmessage = dataChannelMessage;
-        _this[dataChannelSym].onopen = dataChannelOpen;
-        _this[dataChannelSym].onclose = dataChannelClose;
+          _this[dataChannelSym] = _this[peerConnectionSym].createDataChannel('signaler-datachannel', rtcDataChannelOptions);
+          _this[dataChannelSym].onerror = dataChannelError;
+          _this[dataChannelSym].onmessage = dataChannelMessage;
+          _this[dataChannelSym].onopen = dataChannelOpen;
+          _this[dataChannelSym].onclose = dataChannelClose;
+        }
+
+        _this[peerConnectionSym].onnegotiationneeded = negotiationNeeded;
 
         _this[peerConnectionSym].onicecandidate = function (event) {
 
@@ -207,24 +237,6 @@
           });
         };
 
-        _this[peerConnectionSym].onnegotiationneeded = function () {
-
-          _this[peerConnectionSym].createOffer().then(function (offer) {
-
-            subscriber.next({
-              'type': 'offer',
-              offer: offer
-            });
-            return _this[peerConnectionSym].setLocalDescription(new RTCSessionDescription(offer));
-          }).catch(function (error) {
-
-            subscriber.error({
-              'type': 'error',
-              'cause': error
-            });
-          });
-        };
-
         _this[peerConnectionSym].oniceconnectionstatechange = function (event) {
 
           if (!event || !event.target || !event.target.iceConnectionState) {
@@ -242,7 +254,8 @@
               {
 
                 subscriber.next({
-                  'type': 'ready'
+                  'type': 'ready',
+                  'state': event.target.iceConnectionState
                 });
                 break;
               }
@@ -291,39 +304,52 @@
             });
           }
 
+          _this[dataChannelSym] = event.channel;
           event.channel.onerror = dataChannelError;
           event.channel.onmessage = dataChannelMessage;
           event.channel.onopen = dataChannelOpen;
           event.channel.onclose = dataChannelClose;
         };
 
-        _this.setRemoteDescription = function (payload) {
+        _this.setAnswer = function (answer) {
 
-          if (!_this[peerConnectionSym].remoteDescription.type) {
+          _this[peerConnectionSym].setRemoteDescription(new RTCSessionDescription(answer)).then(function () {
 
-            var setRemoteDescriptionPromise = _this[peerConnectionSym].setRemoteDescription(new RTCSessionDescription(payload));
+            subscriber.next({
+              'type': 'answer-set',
+              answer: answer
+            });
+          });
+        };
 
-            if (!_this[peerConnectionSym].localDescription.type) {
+        _this.setOffer = function (offer) {
 
-              setRemoteDescriptionPromise.then(function () {
+          _this[peerConnectionSym].setRemoteDescription(new RTCSessionDescription(offer)).then(function () {
 
-                return _this[peerConnectionSym].createAnswer(_this.sdpConstr);
-              }).then(function (answer) {
+            subscriber.next({
+              'type': 'offer-set',
+              offer: offer
+            });
+            return _this[peerConnectionSym].createAnswer(_this.sdpConstr);
+          }).then(function (answer) {
 
-                subscriber.next({
-                  'type': 'answer',
-                  answer: answer
-                });
-                return _this[peerConnectionSym].setLocalDescription(new RTCSessionDescription(answer));
-              }).catch(function (error) {
+            subscriber.next({
+              'type': 'answer',
+              answer: answer
+            });
+            return Promise.all([_this[peerConnectionSym].setLocalDescription(new RTCSessionDescription(answer)), Promise.resolve(answer)]);
+          }).then(function (resolved) {
+            return subscriber.next({
+              'type': 'answer-set',
+              'answer': resolved[1]
+            });
+          }).catch(function (error) {
 
-                subscriber.error({
-                  'type': 'error',
-                  'cause': error
-                });
-              });
-            }
-          }
+            subscriber.error({
+              'type': 'error',
+              'cause': error
+            });
+          });
         };
 
         return function () {
@@ -342,10 +368,6 @@
           subscriptionToInternalObservable.unsubscribe();
         };
       }));
-
-      internalObservable.forEach(function (element) {
-        return console.info(element);
-      });
 
       _this[iceCandidatesSym] = [];
       _this.sdpConstr = sdpConstr;
@@ -405,6 +427,7 @@
     function Signaler(websocketUrl) {
       var getUserMediaConstr = arguments.length <= 1 || arguments[1] === undefined ? getUserMediaConstraints : arguments[1];
       var sdpConstr = arguments.length <= 2 || arguments[2] === undefined ? sdpConstraints : arguments[2];
+      var debug = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
       babelHelpers.classCallCheck(this, Signaler);
 
 
@@ -418,6 +441,12 @@
             var p2pConnection = new SignalerPeerConnection(sdpConstr);
 
             _this[initiatorsSym].set(element.what.channel, element.who);
+            if (debug) {
+
+              p2pConnection.forEach(function (debugElement) {
+                return console.info(debugElement);
+              });
+            }
 
             p2pConnection.filter(function (fromPeerConnection) {
               return fromPeerConnection.type === 'offer';
@@ -463,10 +492,17 @@
 
               p2pConnection = _this[peersSym].get(element.what.channel + '-' + element.who);
             } else {
-              p2pConnection = new SignalerPeerConnection(sdpConstr);
+              p2pConnection = new SignalerPeerConnection(sdpConstr, true);
 
               _this[initiatorsSym].set(element.what.channel, element.whoami);
               _this[peersSym].set(element.what.channel + '-' + element.who, p2pConnection);
+            }
+
+            if (debug) {
+
+              p2pConnection.forEach(function (debugElement) {
+                return console.info(debugElement);
+              });
             }
 
             p2pConnection.filter(function (fromPeerConnection) {
@@ -492,7 +528,7 @@
             }).forEach(function (fromPeerConnection) {
               return subscriber.next(fromPeerConnection);
             });
-            p2pConnection.setRemoteDescription(element.what.offer);
+            p2pConnection.setOffer(element.what.offer);
           } else {
 
             window.setTimeout(function () {
@@ -520,7 +556,7 @@
               });
             }
 
-            p2pConnection.setRemoteDescription(element.what.answer);
+            p2pConnection.setAnswer(element.what.answer);
           } else {
 
             window.setTimeout(function () {
@@ -581,13 +617,6 @@
           subscriptionToInternalObservable.unsubscribe();
         };
       }));
-
-      setTimeout(function () {
-
-        internalObservable.forEach(function (element) {
-          return console.info(element);
-        });
-      });
 
       _this[comunicatorSym] = new comunicator.Comunicator(websocketUrl);
       _this[userMediaConstraintsSym] = getUserMediaConstr;

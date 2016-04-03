@@ -34,7 +34,7 @@
         'jwtSalt': salt
       }
     }], () => {
-      const sinaler = Singaler(server.comunicator);
+      const signaler = Singaler(server.comunicator);
 
       server.route({
         'method': 'GET',
@@ -66,7 +66,7 @@
 
       server.start(() => {
 
-        console.info(sinaler);
+        console.info(signaler);
         server.connections.forEach(element => {
 
           console.info(`Server running at: ${element.info.uri}`);
