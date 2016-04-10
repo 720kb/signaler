@@ -37,8 +37,23 @@ var ObservableState = function (_Rx$Observable) {
           return true;
         },
         'deleteProperty': function deleteProperty(target, property) {
+          var user = target[property].user,
+              role = target[property].role;
 
-          console.info(target, property);
+          delete target[property];
+
+          if (role === 'master') {
+
+            subscriber.next({
+              'type': 'master-quit'
+            });
+          } else {
+
+            subscriber.next({
+              'type': 'removed',
+              'value': user
+            });
+          }
           return true;
         }
       };
