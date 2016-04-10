@@ -6,7 +6,7 @@
 * https://github.com/720kb/signaler
 *
 * MIT license
-* Sun Apr 03 2016
+* Sun Apr 10 2016
 */
 
 (function (global, factory) {
@@ -407,6 +407,7 @@
   var sdpConstraintsSym = Symbol('sdp-constraints');
   var initiatorsSym = Symbol('initiators');
   var peersSym = Symbol('peers');
+  var subscriptionsSym = Symbol('subscriptions');
   var unknownPeerValue = 'unknown-peer';
   var getUserMediaConstraints = {
     'audio': true,
@@ -435,40 +436,54 @@
         }).forEach(function (element) {
 
           if (element.whoami && element.what.channel) {
-            var p2pConnection = new SignalerPeerConnection(sdpConstr);
+            var p2pConnection = new SignalerPeerConnection(sdpConstr),
+                subscriptionsArray = [];
 
             _this[initiatorsSym].set(element.what.channel, element.who);
             if (debug) {
 
-              p2pConnection.forEach(function (debugElement) {
+              subscriptionsArray.push(p2pConnection.forEach(function (debugElement) {
                 return console.info(debugElement);
-              });
+              }));
             }
 
-            p2pConnection.filter(function (fromPeerConnection) {
+            subscriptionsArray.push(p2pConnection.filter(function (fromPeerConnection) {
               return fromPeerConnection.type === 'offer';
             }).forEach(function (fromPeerConnection) {
               return _this[comunicatorSym].sendTo(element.whoami, {
                 'channel': element.what.channel,
                 'offer': fromPeerConnection.offer
               });
-            });
+            }));
 
-            p2pConnection.filter(function (fromPeerConnection) {
+            subscriptionsArray.push(p2pConnection.filter(function (fromPeerConnection) {
               return fromPeerConnection.type === 'use-ice-candidates';
             }).forEach(function (fromPeerConnection) {
               return _this[comunicatorSym].sendTo(element.whoami, {
                 'channel': element.what.channel,
                 'candidates': fromPeerConnection.candidates
               });
-            });
+            }));
 
-            p2pConnection.filter(function (fromPeerConnection) {
+            subscriptionsArray.push(p2pConnection.filter(function (fromPeerConnection) {
               return fromPeerConnection.type === 'datachannel-message';
             }).forEach(function (fromPeerConnection) {
               return subscriber.next(fromPeerConnection);
-            });
-            _this[peersSym].set(element.what.channel + '-' + element.who, p2pConnection);
+            }));
+
+            if (!_this[peersSym].has('' + element.what.channel)) {
+
+              _this[peersSym].set('' + element.what.channel, new Map());
+            }
+            _this[peersSym].get('' + element.what.channel).set('' + element.who, p2pConnection);
+
+            if (_this[subscriptionsSym].has('' + element.what.channel)) {
+
+              _this[subscriptionsSym].set('' + element.what.channel, _this[subscriptionsSym].get('' + element.what.channel).concat(subscriptionsArray));
+            } else {
+
+              _this[subscriptionsSym].set('' + element.what.channel, subscriptionsArray);
+            }
           } else {
 
             window.setTimeout(function () {
@@ -483,49 +498,63 @@
         }).forEach(function (element) {
 
           if (element.whoami && element.what.channel && element.what.offer) {
-            var p2pConnection = undefined;
+            var p2pConnection = undefined,
+                subscriptionsArray = [];
 
-            if (_this[peersSym].has(element.what.channel + '-' + element.who)) {
+            if (!_this[peersSym].has('' + element.what.channel)) {
 
-              p2pConnection = _this[peersSym].get(element.what.channel + '-' + element.who);
+              _this[peersSym].set('' + element.what.channel, new Map());
+            }
+
+            if (_this[peersSym].get('' + element.what.channel).has('' + element.who)) {
+
+              p2pConnection = _this[peersSym].get('' + element.what.channel).get('' + element.who);
             } else {
               p2pConnection = new SignalerPeerConnection(sdpConstr, true);
 
               _this[initiatorsSym].set(element.what.channel, element.whoami);
-              _this[peersSym].set(element.what.channel + '-' + element.who, p2pConnection);
+              _this[peersSym].get('' + element.what.channel).set('' + element.who, p2pConnection);
             }
 
             if (debug) {
 
-              p2pConnection.forEach(function (debugElement) {
+              subscriptionsArray.push(p2pConnection.forEach(function (debugElement) {
                 return console.info(debugElement);
-              });
+              }));
             }
 
-            p2pConnection.filter(function (fromPeerConnection) {
+            subscriptionsArray.push(p2pConnection.filter(function (fromPeerConnection) {
               return fromPeerConnection.type === 'answer';
             }).forEach(function (fromPeerConnection) {
               return _this[comunicatorSym].sendTo(element.whoami, {
                 'channel': element.what.channel,
                 'answer': fromPeerConnection.answer
               });
-            });
+            }));
 
-            p2pConnection.filter(function (fromPeerConnection) {
+            subscriptionsArray.push(p2pConnection.filter(function (fromPeerConnection) {
               return fromPeerConnection.type === 'use-ice-candidates';
             }).forEach(function (fromPeerConnection) {
               return _this[comunicatorSym].sendTo(element.whoami, {
                 'channel': element.what.channel,
                 'candidates': fromPeerConnection.candidates
               });
-            });
+            }));
 
-            p2pConnection.filter(function (fromPeerConnection) {
+            subscriptionsArray.push(p2pConnection.filter(function (fromPeerConnection) {
               return fromPeerConnection.type === 'datachannel-message';
             }).forEach(function (fromPeerConnection) {
               return subscriber.next(fromPeerConnection);
-            });
+            }));
             p2pConnection.setOffer(element.what.offer);
+
+            if (_this[subscriptionsSym].has('' + element.what.channel)) {
+
+              _this[subscriptionsSym].set('' + element.what.channel, _this[subscriptionsSym].get('' + element.what.channel).concat(subscriptionsArray));
+            } else {
+
+              _this[subscriptionsSym].set('' + element.what.channel, subscriptionsArray);
+            }
           } else {
 
             window.setTimeout(function () {
@@ -540,11 +569,11 @@
         }).forEach(function (element) {
 
           if (element.whoami && element.what.channel && element.what.answer) {
-            var p2pConnection = undefined;
 
-            if (_this[peersSym].has(element.what.channel + '-' + element.who)) {
+            if (_this[peersSym].has('' + element.what.channel) && _this[peersSym].get('' + element.what.channel).has('' + element.who)) {
+              var p2pConnection = _this[peersSym].get('' + element.what.channel).get('' + element.who);
 
-              p2pConnection = _this[peersSym].get(element.what.channel + '-' + element.who);
+              p2pConnection.setAnswer(element.what.answer);
             } else {
 
               window.setTimeout(function () {
@@ -552,8 +581,6 @@
                 throw new Error('The peer connection must be already enstablished');
               });
             }
-
-            p2pConnection.setAnswer(element.what.answer);
           } else {
 
             window.setTimeout(function () {
@@ -566,11 +593,11 @@
         _this[comunicatorSym].filter(function (element) {
           return element.what && element.what.candidates;
         }).forEach(function (element) {
-          var p2pConnection = undefined;
 
-          if (_this[peersSym].has(element.what.channel + '-' + element.who)) {
+          if (_this[peersSym].has('' + element.what.channel) && _this[peersSym].get('' + element.what.channel).has('' + element.who)) {
+            var p2pConnection = _this[peersSym].get('' + element.what.channel).get('' + element.who);
 
-            p2pConnection = _this[peersSym].get(element.what.channel + '-' + element.who);
+            p2pConnection.addIceCandidates(element.what.candidates);
           } else {
 
             window.setTimeout(function () {
@@ -578,8 +605,6 @@
               throw new Error('The peer connection must be already enstablished');
             });
           }
-
-          p2pConnection.addIceCandidates(element.what.candidates);
         });
 
         _this.getUserMedia = function () {
@@ -620,6 +645,7 @@
       _this[sdpConstraintsSym] = sdpConstr;
       _this[peersSym] = new Map();
       _this[initiatorsSym] = new Map();
+      _this[subscriptionsSym] = new Map();
       return _this;
     }
 
@@ -658,8 +684,8 @@
       key: 'sendTo',
       value: function sendTo(channel, who, what) {
 
-        if (this[peersSym].has(channel + '-' + who)) {
-          var dataChannel = this[peersSym].get(channel + '-' + who).dataChannel;
+        if (this[peersSym].has('' + channel) && this[peersSym].get('' + channel).has('' + who)) {
+          var dataChannel = this[peersSym].get('' + channel).get('' + who).dataChannel;
 
           dataChannel.send(JSON.stringify(what));
         } else {
@@ -670,37 +696,40 @@
     }, {
       key: 'broadcast',
       value: function broadcast(channel, what) {
-        var mapKeys = this[peersSym].keys();
 
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
+        if (this[peersSym].has('' + channel)) {
+          var channelMap = this[peersSym].get('' + channel),
+              entriesInChannelMap = channelMap.values();
 
-        try {
-          for (var _iterator = mapKeys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var aMapKey = _step.value;
+          var _iteratorNormalCompletion = true;
+          var _didIteratorError = false;
+          var _iteratorError = undefined;
 
-            var channelAndWho = aMapKey.split('-');
+          try {
+            for (var _iterator = entriesInChannelMap[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              var aUserInChannel = _step.value;
 
-            if (channelAndWho[0] === String(channel)) {
-              var dataChannel = this[peersSym].get(aMapKey).dataChannel;
+              var dataChannel = aUserInChannel.dataChannel;
 
               dataChannel.send(JSON.stringify(what));
             }
-          }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-              _iterator.return();
-            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
           } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
             }
           }
+        } else {
+
+          throw new Error('Channel ' + channel + ' doesn\'t exist');
         }
       }
     }, {
@@ -711,7 +740,59 @@
       value: function unApprove() {}
     }, {
       key: 'leaveChannel',
-      value: function leaveChannel() {}
+      value: function leaveChannel(channel, keepMyStream) {
+
+        if (this[peersSym].has('' + channel)) {
+          var subscriptionsMap = this[subscriptionsSym].get('' + channel);
+
+          var _iteratorNormalCompletion2 = true;
+          var _didIteratorError2 = false;
+          var _iteratorError2 = undefined;
+
+          try {
+            for (var _iterator2 = subscriptionsMap[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+              var aSubscription = _step2.value;
+
+
+              if (aSubscription.unsubscribe) {
+                //XXX understand why, forEach?
+
+                aSubscription.unsubscribe();
+              }
+            }
+          } catch (err) {
+            _didIteratorError2 = true;
+            _iteratorError2 = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                _iterator2.return();
+              }
+            } finally {
+              if (_didIteratorError2) {
+                throw _iteratorError2;
+              }
+            }
+          }
+
+          if (!keepMyStream && this[myStreamSym]) {
+
+            this[myStreamSym].stop();
+            this[myStreamSym] = undefined;
+          }
+          this[initiatorsSym].delete(channel);
+          this[peersSym].delete(channel);
+          this[subscriptionsSym].delete(channel);
+          //delete approvedUsers[channel]; TODO approved users
+          this[comunicatorSym].sendTo(unknownPeerValue, {
+            'type': 'leave-channel',
+            channel: channel
+          }, true);
+        } else {
+
+          throw new Error('Channel ' + channel + ' doesn\'t exist');
+        }
+      }
     }, {
       key: 'userIsPresent',
       value: function userIsPresent(whoami, token) {

@@ -65,6 +65,19 @@
     }
   };
 
+  leaveChannelButtonElement.onclick = function onLeaveChannelClick() {
+
+    if (roomIdentifierTextElement &&
+      roomIdentifierTextElement.value) {
+
+      signaler.leaveChannel(roomIdentifierTextElement.value, true);
+      roomIdentifierTextElement.value = '';
+    } else {
+
+      window.console.error('Manadatory channel name missing.');
+    }
+  };
+
   signaler
     .filter(element => element.type === 'datachannel-message')
     .forEach(element => {
@@ -122,7 +135,6 @@ signaler.then(function onSignalerReady(theSignaler) {
       }
     }, false);
 
-    theSignaler.userIsPresent(userIdentifier, jsonResponse.token);
 
     plugChannelButtonElement.onclick = function onPlugChannelClick() {
 
@@ -148,19 +160,6 @@ signaler.then(function onSignalerReady(theSignaler) {
         approveIdentifierTextElement.value) {
 
         theSignaler.unApprove(roomIdentifierTextElement.value, approveIdentifierTextElement.value);
-      }
-    };
-
-    leaveChannelButtonElement.onclick = function onLeaveChannelClick() {
-
-      if (roomIdentifierTextElement &&
-        roomIdentifierTextElement.value) {
-
-        theSignaler.leaveChannel(roomIdentifierTextElement.value, true);
-        roomIdentifierTextElement.value = '';
-      } else {
-
-        window.console.error('Manadatory channel name missing.');
       }
     };
   }

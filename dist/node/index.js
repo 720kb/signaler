@@ -12,15 +12,12 @@ module.exports = function (comunicator) {
   }
   var signalerState = new ObservableState();
 
-  comunicator.forEach(function (element) {
-
-    console.info(element);
+  /*comunicator.forEach(element => {
+     console.info(element);
   });
-
-  signalerState.forEach(function (element) {
-
-    console.info(element);
-  });
+   signalerState.forEach(element => {
+     console.info(element);
+  });*/
 
   signalerState.filter(function (element) {
     return element.type === 'added';
@@ -160,6 +157,21 @@ module.exports = function (comunicator) {
     }
   });
 
+  comunicator.filter(function (element) {
+    return element.type === 'message-arrived' && element.what && element.what.type === 'leave-channel';
+  }).forEach(function (element) {
+    var theChannel = signalerState.channels[element.channel];
+
+    for (var theChannelIndex = theChannel.length - 1; theChannelIndex >= 0; theChannelIndex -= 1) {
+      var theUser = theChannel[theChannelIndex];
+
+      if (theUser && theUser.user === element.whoami) {
+
+        signalerState.channels[element.channel].splice(theChannelIndex, 1);
+      }
+    }
+  });
+
   /*comunicator
     .filter(element => element.type === 'message-arrived' &&
       element.what &&
@@ -270,21 +282,6 @@ module.exports = function (comunicator) {
         });
       }
     });
-  });
-
-  comunicator.filter(function (element) {
-    return element.type === 'message-arrived' && element.what && element.what.type === 'leave-channel';
-  }).forEach(function (element) {
-    var theChannel = signalerState.channels[element.channel];
-
-    for (var theChannelIndex = theChannel.length - 1; theChannelIndex >= 0; theChannelIndex -= 1) {
-      var theUser = theChannel[theChannelIndex];
-
-      if (theUser && theUser.user === element.whoami) {
-
-        signalerState.channels[element.channel].splice(theChannelIndex, 1);
-      }
-    }
   });
 
   comunicator.filter(function (element) {
