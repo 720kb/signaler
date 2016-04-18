@@ -38,6 +38,7 @@ var ObservableState = function (_Rx$Observable) {
         },
         'deleteProperty': function deleteProperty(target, property) {
           var user = target[property].user,
+              channel = target[property].channel,
               role = target[property].role;
 
           delete target[property];
@@ -45,12 +46,14 @@ var ObservableState = function (_Rx$Observable) {
           if (role === 'master') {
 
             subscriber.next({
-              'type': 'master-quit'
+              'type': 'master-quit',
+              channel: channel
             });
           } else {
 
             subscriber.next({
-              'type': 'removed',
+              'type': 'quit',
+              channel: channel,
               'value': user
             });
           }

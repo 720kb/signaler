@@ -81,17 +81,23 @@ module.exports = function (comunicator) {
   });
 
   signalerState.filter(function (element) {
-    return element.type === 'removed';
+    return element.type === 'quit';
   }).forEach(function (element) {
 
-    console.info('removed', element);
+    comunicator.broadcast(element.value, {
+      'type': 'i-quit',
+      'channel': element.channel
+    });
   });
 
   signalerState.filter(function (element) {
     return element.type === 'master-quit';
   }).forEach(function (element) {
 
-    console.info('master quits!', element);
+    comunicator.broadcast(element.value, {
+      'type': 'master-quits',
+      'channel': element.channel
+    });
   });
 
   comunicator.filter(function (element) {
@@ -181,23 +187,6 @@ module.exports = function (comunicator) {
     }
   });
 
-  /*comunicator
-    .filter(element => element.type === 'message-arrived' &&
-      element.what &&
-      element.what.type === 'answer')
-    .forEach(element => {
-      if (element.channel &&
-        element.answer) {
-         comunicator.sendTo(element.whoami, element.who, {
-          'type': 'take-answer',
-          'channel': element.channel,
-          'answer': element.answer
-        });
-      } else {
-         throw new Error('Missing mandatory <channel> and <answer> values');
-      }
-    });*/
-
   comunicator.filter(function (element) {
     return element.type === 'user-leave';
   }).forEach(function (element) {
@@ -271,28 +260,6 @@ module.exports = function (comunicator) {
           });
         }
       });
-    });
-   comunicator
-    .filter(element => element.type === 'message-arrived' &&
-      element.what &&
-      element.what.offer)
-    .map(element => ({
-      'channel': element.what.channel,
-      'offer': element.what.offer,
-      'whoami': element.whoami,
-      'who': element.who
-    }))
-    .forEach(element => {
-      comunicator.sendTo(element.whoami, element.who, {
-        'type': 'take-offer',
-        'channel': element.channel,
-        'offer': element.offer
-      });
-      console.info(element.whoami, 'to', element.who, 'message', {
-        'type': 'take-offer',
-        'channel': element.channel,
-        'offer': element.offer
-      })
     });*/
 };
 //# sourceMappingURL=index.js.map
