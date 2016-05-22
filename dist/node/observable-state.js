@@ -47,7 +47,8 @@ var ObservableState = function (_Rx$Observable) {
 
             subscriber.next({
               'type': 'master-quit',
-              channel: channel
+              channel: channel,
+              'value': user
             });
           } else {
 
